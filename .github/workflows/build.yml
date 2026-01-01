@@ -38,10 +38,10 @@ jobs:
         shell: msys2 {0}
         run: |
           echo "=== Installed packages ==="
-          pacman -Q tmux fish git mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
+          pacman -Q tmux fish mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
 
           echo "=== Binary locations ==="
-          which tmux fish git
+          which tmux fish
           ls -la /ucrt64/bin/fzf.exe /ucrt64/bin/rg.exe
 
       - name: Get package versions
@@ -53,7 +53,6 @@ jobs:
           echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "fish_version=$(pacman -Q fish | awk '{print $2}')" >> $GITHUB_OUTPUT
-          echo "git_version=$(pacman -Q git | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Clean up MSYS2 environment
         shell: msys2 {0}
@@ -121,7 +120,6 @@ jobs:
             | mintty | ${{ steps.versions.outputs.mintty_version }} |
             | fish | ${{ steps.versions.outputs.fish_version }} |
             | tmux | ${{ steps.versions.outputs.tmux_version }} |
-            | git | ${{ steps.versions.outputs.git_version }} |
             | fzf | ${{ steps.versions.outputs.fzf_version }} |
             | ripgrep | ${{ steps.versions.outputs.rg_version }} |
 
