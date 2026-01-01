@@ -95,11 +95,12 @@ jobs:
           Write-Host "Archive: $zipName ($([math]::Round($size, 2)) MB)"
 
           echo "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+          echo "short_sha=$shortSha" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: msys2-term
+          name: msys2-term-${{ steps.archive.outputs.short_sha }}
           path: ${{ steps.archive.outputs.zip_name }}
 
       - name: Create Release
