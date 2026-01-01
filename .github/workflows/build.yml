@@ -82,26 +82,24 @@ jobs:
           $msysRoot = "${{ steps.msys2.outputs.msys2-location }}"
           $shortSha = "${{ github.sha }}".Substring(0, 7)
           $zipName = "msys2-term-$shortSha.zip"
-          Write-Host "MSYS2 root: $msysRoot"
-          Write-Host "Archive name: $zipName"
 
           # Remove items that shouldn't be in the archive
           Remove-Item -Path "$msysRoot\proc" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "$msysRoot\dev\fd" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "$msysRoot\dev\std*" -Force -ErrorAction SilentlyContinue
 
-          # Use 7-Zip to create archive (preserves empty directories)
+          # Create zip with 7-Zip
           7z a -tzip -mx=5 $zipName "$msysRoot\*"
 
           $size = (Get-Item $zipName).Length / 1MB
-          Write-Host "Archive size: $([math]::Round($size, 2)) MB"
+          Write-Host "Archive: $zipName ($([math]::Round($size, 2)) MB)"
 
           echo "zip_name=$zipName" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: msys2-term-${{ github.sha }}
+          name: msys2-term
           path: ${{ steps.archive.outputs.zip_name }}
 
       - name: Create Release
