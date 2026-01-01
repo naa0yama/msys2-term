@@ -67,74 +67,50 @@ jobs:
         shell: msys2 {0}
         run: |
           # Create Windows launcher script
-          cat > /msys2.cmd << 'CMDEOF'
-@echo off
-setlocal EnableDelayedExpansion
-set "HERE=%~dp0"
-set "HERE=!HERE:~0,-1!"
-set "MSYS2_ROOT=%HERE%"
-set "PATH=%MSYS2_ROOT%\usr\bin;%MSYS2_ROOT%\ucrt64\bin;%PATH%"
-set "MSYSTEM=UCRT64"
-set "MSYS2_PATH_TYPE=inherit"
-set "HOME=%USERPROFILE%"
-start "" "%MSYS2_ROOT%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 UCRT64" -e /usr/bin/bash --login
-CMDEOF
+          printf '%s\r\n' \
+            '@echo off' \
+            'setlocal EnableDelayedExpansion' \
+            'set "HERE=%%~dp0"' \
+            'set "HERE=!HERE:~0,-1!"' \
+            'set "MSYS2_ROOT=%%HERE%%"' \
+            'set "PATH=%%MSYS2_ROOT%%\usr\bin;%%MSYS2_ROOT%%\ucrt64\bin;%%PATH%%"' \
+            'set "MSYSTEM=UCRT64"' \
+            'set "MSYS2_PATH_TYPE=inherit"' \
+            'set "HOME=%%USERPROFILE%%"' \
+            'start "" "%%MSYS2_ROOT%%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 UCRT64" -e /usr/bin/bash --login' \
+            > /msys2.cmd
 
           # Create fish launcher
-          cat > /msys2-fish.cmd << 'CMDEOF'
-@echo off
-setlocal EnableDelayedExpansion
-set "HERE=%~dp0"
-set "HERE=!HERE:~0,-1!"
-set "MSYS2_ROOT=%HERE%"
-set "PATH=%MSYS2_ROOT%\usr\bin;%MSYS2_ROOT%\ucrt64\bin;%PATH%"
-set "MSYSTEM=UCRT64"
-set "MSYS2_PATH_TYPE=inherit"
-set "HOME=%USERPROFILE%"
-start "" "%MSYS2_ROOT%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 Fish" -e /usr/bin/fish --login
-CMDEOF
+          printf '%s\r\n' \
+            '@echo off' \
+            'setlocal EnableDelayedExpansion' \
+            'set "HERE=%%~dp0"' \
+            'set "HERE=!HERE:~0,-1!"' \
+            'set "MSYS2_ROOT=%%HERE%%"' \
+            'set "PATH=%%MSYS2_ROOT%%\usr\bin;%%MSYS2_ROOT%%\ucrt64\bin;%%PATH%%"' \
+            'set "MSYSTEM=UCRT64"' \
+            'set "MSYS2_PATH_TYPE=inherit"' \
+            'set "HOME=%%USERPROFILE%%"' \
+            'start "" "%%MSYS2_ROOT%%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 Fish" -e /usr/bin/fish --login' \
+            > /msys2-fish.cmd
 
           # Create README
-          cat > /README.md << 'EOF'
-# MSYS2 Terminal Package
-
-Portable MSYS2 environment with pacman support.
-
-## Quick Start
-
-1. Extract this archive to your desired location (e.g., `C:\msys2-term`)
-2. Run `msys2.cmd` to open bash terminal
-3. Run `msys2-fish.cmd` to open fish terminal
-
-## Pre-installed Tools
-
-- **bash** - Default shell
-- **fish** - Friendly interactive shell
-- **tmux** - Terminal multiplexer
-- **git** - Version control
-- **fzf** - Fuzzy finder (in /ucrt64/bin)
-- **ripgrep** - Fast search tool (rg, in /ucrt64/bin)
-
-## Adding Packages
-
-This is a full MSYS2 environment with pacman:
-
-```bash
-# Update package database
-pacman -Sy
-
-# Install new packages
-pacman -S <package-name>
-
-# Search for packages
-pacman -Ss <keyword>
-```
-
-## Environment
-
-- MSYS2 UCRT64
-- Portable installation
-EOF
+          echo '# MSYS2 Terminal Package' > /README.md
+          echo '' >> /README.md
+          echo 'Portable MSYS2 environment with pacman support.' >> /README.md
+          echo '' >> /README.md
+          echo '## Quick Start' >> /README.md
+          echo '1. Extract this archive to your desired location' >> /README.md
+          echo '2. Run msys2.cmd to open bash terminal' >> /README.md
+          echo '3. Run msys2-fish.cmd to open fish terminal' >> /README.md
+          echo '' >> /README.md
+          echo '## Pre-installed Tools' >> /README.md
+          echo 'bash, fish, tmux, git, fzf, ripgrep' >> /README.md
+          echo '' >> /README.md
+          echo '## Adding Packages' >> /README.md
+          echo 'pacman -Sy           # Update database' >> /README.md
+          echo 'pacman -S <package>  # Install package' >> /README.md
+          echo 'pacman -Ss <keyword> # Search packages' >> /README.md
 
       - name: Create archive
         shell: pwsh
