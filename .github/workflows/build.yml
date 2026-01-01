@@ -19,7 +19,6 @@ jobs:
         with:
           msystem: UCRT64
           update: true
-          location: C:\msys64
           install: >-
             base
             bash
@@ -31,22 +30,26 @@ jobs:
             mintty
             tmux
 
+      - name: Verify packages installed
+        shell: msys2 {0}
+        run: |
+          echo "=== Installed packages ==="
+          pacman -Q tmux fish git mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
+
+          echo "=== Binary locations ==="
+          which tmux fish git
+          ls -la /ucrt64/bin/fzf.exe /ucrt64/bin/rg.exe
+
       - name: Get package versions
         id: versions
         shell: msys2 {0}
         run: |
-          TMUX_VER=$(pacman -Q tmux | awk '{print $2}')
-          FZF_VER=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')
-          RG_VER=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')
-          MINTTY_VER=$(pacman -Q mintty | awk '{print $2}')
-          FISH_VER=$(pacman -Q fish | awk '{print $2}')
-          GIT_VER=$(pacman -Q git | awk '{print $2}')
-          echo "tmux_version=$TMUX_VER" >> $GITHUB_OUTPUT
-          echo "fzf_version=$FZF_VER" >> $GITHUB_OUTPUT
-          echo "rg_version=$RG_VER" >> $GITHUB_OUTPUT
-          echo "mintty_version=$MINTTY_VER" >> $GITHUB_OUTPUT
-          echo "fish_version=$FISH_VER" >> $GITHUB_OUTPUT
-          echo "git_version=$GIT_VER" >> $GITHUB_OUTPUT
+          echo "tmux_version=$(pacman -Q tmux | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "fzf_version=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "fish_version=$(pacman -Q fish | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "git_version=$(pacman -Q git | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Clean up MSYS2 environment
         shell: msys2 {0}
@@ -54,75 +57,38 @@ jobs:
           # Clear package cache to reduce size
           pacman -Scc --noconfirm
 
-          # Remove unnecessary files
+          # Remove cache files but keep directory structure
           rm -rf /var/cache/pacman/pkg/*
           rm -rf /var/log/*
-          rm -rf /tmp/*
+
+          # Ensure required directories exist
+          mkdir -p /tmp /dev/shm /dev/mqueue
 
           echo "Cleanup complete"
 
-      - name: Create launcher scripts
-        shell: msys2 {0}
+      - name: Get MSYS2 root path
+        id: msys2path
+        shell: pwsh
         run: |
-          # Create Windows launcher script
-          printf '%s\r\n' \
-            '@echo off' \
-            'setlocal EnableDelayedExpansion' \
-            'set "HERE=%%~dp0"' \
-            'set "HERE=!HERE:~0,-1!"' \
-            'set "MSYS2_ROOT=%%HERE%%"' \
-            'set "PATH=%%MSYS2_ROOT%%\usr\bin;%%MSYS2_ROOT%%\ucrt64\bin;%%PATH%%"' \
-            'set "MSYSTEM=UCRT64"' \
-            'set "MSYS2_PATH_TYPE=inherit"' \
-            'set "HOME=%%USERPROFILE%%"' \
-            'start "" "%%MSYS2_ROOT%%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 UCRT64" -e /usr/bin/bash --login' \
-            > /msys2.cmd
-
-          # Create fish launcher
-          printf '%s\r\n' \
-            '@echo off' \
-            'setlocal EnableDelayedExpansion' \
-            'set "HERE=%%~dp0"' \
-            'set "HERE=!HERE:~0,-1!"' \
-            'set "MSYS2_ROOT=%%HERE%%"' \
-            'set "PATH=%%MSYS2_ROOT%%\usr\bin;%%MSYS2_ROOT%%\ucrt64\bin;%%PATH%%"' \
-            'set "MSYSTEM=UCRT64"' \
-            'set "MSYS2_PATH_TYPE=inherit"' \
-            'set "HOME=%%USERPROFILE%%"' \
-            'start "" "%%MSYS2_ROOT%%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 Fish" -e /usr/bin/fish --login' \
-            > /msys2-fish.cmd
-
-          # Create README
-          echo '# MSYS2 Terminal Package' > /README.md
-          echo '' >> /README.md
-          echo 'Portable MSYS2 environment with pacman support.' >> /README.md
-          echo '' >> /README.md
-          echo '## Quick Start' >> /README.md
-          echo '1. Extract this archive to your desired location' >> /README.md
-          echo '2. Run msys2.cmd to open bash terminal' >> /README.md
-          echo '3. Run msys2-fish.cmd to open fish terminal' >> /README.md
-          echo '' >> /README.md
-          echo '## Pre-installed Tools' >> /README.md
-          echo 'bash, fish, tmux, git, fzf, ripgrep' >> /README.md
-          echo '' >> /README.md
-          echo '## Adding Packages' >> /README.md
-          echo 'pacman -Sy           # Update database' >> /README.md
-          echo 'pacman -S <package>  # Install package' >> /README.md
-          echo 'pacman -Ss <keyword> # Search packages' >> /README.md
+          $msysRoot = (Get-Command msys2).Source | Split-Path | Split-Path
+          echo "MSYS2_ROOT=$msysRoot" >> $env:GITHUB_OUTPUT
+          Write-Host "MSYS2 root: $msysRoot"
 
       - name: Create archive
         shell: pwsh
         run: |
-          $msysRoot = "C:\msys64"
+          $msysRoot = "${{ steps.msys2path.outputs.MSYS2_ROOT }}"
           $archiveName = "msys2-term.tar.gz"
+          $tempArchive = "$env:RUNNER_TEMP\msys2-term.tar.gz"
 
-          Write-Host "Creating archive from $msysRoot..."
+          Write-Host "MSYS2 root: $msysRoot"
+          Write-Host "Creating archive..."
 
-          # Use MSYS2's tar for better compatibility
-          & "$msysRoot\usr\bin\bash.exe" -c "cd / && tar --exclude='./dev/*' --exclude='./proc/*' --exclude='./tmp/*' -czvf /tmp/msys2-term.tar.gz ."
+          # Create archive using MSYS2's tar (output to runner temp, not inside msys2)
+          & "$msysRoot\usr\bin\bash.exe" -lc "tar -C / --exclude='./proc' --exclude='./dev/fd' --exclude='./dev/std*' -czf '$($tempArchive -replace '\\','/')' ."
 
           # Move to workspace
-          Move-Item "$msysRoot\tmp\msys2-term.tar.gz" -Destination "." -Force
+          Move-Item $tempArchive -Destination "." -Force
 
           # Show archive size
           $size = (Get-Item $archiveName).Length / 1MB
@@ -155,8 +121,8 @@ jobs:
             | ripgrep | ${{ steps.versions.outputs.rg_version }} |
 
             ### Quick Start
-            1. Extract `msys2-term.tar.gz` to desired location
-            2. Run `msys2.cmd` to open terminal
+            1. Extract `msys2-term.tar.gz` to desired location (e.g., `C:\msys2`)
+            2. Run `ucrt64.exe` or `msys2_shell.cmd -ucrt64` to open terminal
             3. Use `pacman -S <package>` to install additional packages
 
             Built with MSYS2 UCRT64 environment.
