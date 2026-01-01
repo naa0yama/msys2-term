@@ -1,0 +1,190 @@
+name: Build MSYS2 Terminal Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          location: C:\msys64
+          install: >-
+            base
+            bash
+            coreutils
+            fish
+            git
+            mingw-w64-ucrt-x86_64-fzf
+            mingw-w64-ucrt-x86_64-ripgrep
+            mintty
+            tmux
+
+      - name: Get package versions
+        id: versions
+        shell: msys2 {0}
+        run: |
+          TMUX_VER=$(pacman -Q tmux | awk '{print $2}')
+          FZF_VER=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')
+          RG_VER=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')
+          MINTTY_VER=$(pacman -Q mintty | awk '{print $2}')
+          FISH_VER=$(pacman -Q fish | awk '{print $2}')
+          GIT_VER=$(pacman -Q git | awk '{print $2}')
+          echo "tmux_version=$TMUX_VER" >> $GITHUB_OUTPUT
+          echo "fzf_version=$FZF_VER" >> $GITHUB_OUTPUT
+          echo "rg_version=$RG_VER" >> $GITHUB_OUTPUT
+          echo "mintty_version=$MINTTY_VER" >> $GITHUB_OUTPUT
+          echo "fish_version=$FISH_VER" >> $GITHUB_OUTPUT
+          echo "git_version=$GIT_VER" >> $GITHUB_OUTPUT
+
+      - name: Clean up MSYS2 environment
+        shell: msys2 {0}
+        run: |
+          # Clear package cache to reduce size
+          pacman -Scc --noconfirm
+
+          # Remove unnecessary files
+          rm -rf /var/cache/pacman/pkg/*
+          rm -rf /var/log/*
+          rm -rf /tmp/*
+
+          # Show disk usage
+          echo "=== MSYS2 disk usage ==="
+          du -sh /
+
+      - name: Create launcher scripts
+        shell: msys2 {0}
+        run: |
+          # Create Windows launcher script
+          cat > /msys2.cmd << 'CMDEOF'
+@echo off
+setlocal EnableDelayedExpansion
+set "HERE=%~dp0"
+set "HERE=!HERE:~0,-1!"
+set "MSYS2_ROOT=%HERE%"
+set "PATH=%MSYS2_ROOT%\usr\bin;%MSYS2_ROOT%\ucrt64\bin;%PATH%"
+set "MSYSTEM=UCRT64"
+set "MSYS2_PATH_TYPE=inherit"
+set "HOME=%USERPROFILE%"
+start "" "%MSYS2_ROOT%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 UCRT64" -e /usr/bin/bash --login
+CMDEOF
+
+          # Create fish launcher
+          cat > /msys2-fish.cmd << 'CMDEOF'
+@echo off
+setlocal EnableDelayedExpansion
+set "HERE=%~dp0"
+set "HERE=!HERE:~0,-1!"
+set "MSYS2_ROOT=%HERE%"
+set "PATH=%MSYS2_ROOT%\usr\bin;%MSYS2_ROOT%\ucrt64\bin;%PATH%"
+set "MSYSTEM=UCRT64"
+set "MSYS2_PATH_TYPE=inherit"
+set "HOME=%USERPROFILE%"
+start "" "%MSYS2_ROOT%\usr\bin\mintty.exe" --icon /msys2.ico --title "MSYS2 Fish" -e /usr/bin/fish --login
+CMDEOF
+
+          # Create README
+          cat > /README.md << 'EOF'
+# MSYS2 Terminal Package
+
+Portable MSYS2 environment with pacman support.
+
+## Quick Start
+
+1. Extract this archive to your desired location (e.g., `C:\msys2-term`)
+2. Run `msys2.cmd` to open bash terminal
+3. Run `msys2-fish.cmd` to open fish terminal
+
+## Pre-installed Tools
+
+- **bash** - Default shell
+- **fish** - Friendly interactive shell
+- **tmux** - Terminal multiplexer
+- **git** - Version control
+- **fzf** - Fuzzy finder (in /ucrt64/bin)
+- **ripgrep** - Fast search tool (rg, in /ucrt64/bin)
+
+## Adding Packages
+
+This is a full MSYS2 environment with pacman:
+
+```bash
+# Update package database
+pacman -Sy
+
+# Install new packages
+pacman -S <package-name>
+
+# Search for packages
+pacman -Ss <keyword>
+```
+
+## Environment
+
+- MSYS2 UCRT64
+- Portable installation
+EOF
+
+      - name: Create archive
+        shell: pwsh
+        run: |
+          $msysRoot = "C:\msys64"
+          $archiveName = "msys2-term.tar.gz"
+
+          Write-Host "Creating archive from $msysRoot..."
+
+          # Use MSYS2's tar for better compatibility
+          & "$msysRoot\usr\bin\bash.exe" -c "cd / && tar --exclude='./dev/*' --exclude='./proc/*' --exclude='./tmp/*' -czvf /tmp/msys2-term.tar.gz ."
+
+          # Move to workspace
+          Move-Item "$msysRoot\tmp\msys2-term.tar.gz" -Destination "." -Force
+
+          # Show archive size
+          $size = (Get-Item $archiveName).Length / 1MB
+          Write-Host "Archive size: $([math]::Round($size, 2)) MB"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: msys2-term
+          path: msys2-term.tar.gz
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: msys2-term.tar.gz
+          body: |
+            ## MSYS2 Terminal Package
+
+            Portable MSYS2 environment with **pacman support**.
+
+            ### Pre-installed Tools
+            | Tool | Version |
+            |------|---------|
+            | mintty | ${{ steps.versions.outputs.mintty_version }} |
+            | fish | ${{ steps.versions.outputs.fish_version }} |
+            | tmux | ${{ steps.versions.outputs.tmux_version }} |
+            | git | ${{ steps.versions.outputs.git_version }} |
+            | fzf | ${{ steps.versions.outputs.fzf_version }} |
+            | ripgrep | ${{ steps.versions.outputs.rg_version }} |
+
+            ### Quick Start
+            1. Extract `msys2-term.tar.gz` to desired location
+            2. Run `msys2.cmd` to open terminal
+            3. Use `pacman -S <package>` to install additional packages
+
+            Built with MSYS2 UCRT64 environment.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
