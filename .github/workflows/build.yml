@@ -74,24 +74,29 @@ jobs:
           $msysRoot = "${{ steps.msys2.outputs.msys2-location }}"
           Write-Host "MSYS2 root: $msysRoot"
 
-          # Create archive using tar from MSYS2
-          & "$msysRoot\usr\bin\tar.exe" -C "$msysRoot" --exclude='./proc' --exclude='./dev/fd' --exclude='./dev/std*' -czf msys2-term.tar.gz .
+          # Remove items that shouldn't be in the archive
+          Remove-Item -Path "$msysRoot\proc" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$msysRoot\dev\fd" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$msysRoot\dev\std*" -Force -ErrorAction SilentlyContinue
+
+          # Create zip archive
+          Compress-Archive -Path "$msysRoot\*" -DestinationPath "msys2-term.zip" -CompressionLevel Optimal
 
           # Show archive size
-          $size = (Get-Item "msys2-term.tar.gz").Length / 1MB
+          $size = (Get-Item "msys2-term.zip").Length / 1MB
           Write-Host "Archive size: $([math]::Round($size, 2)) MB"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: msys2-term
-          path: msys2-term.tar.gz
+          path: msys2-term.zip
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: msys2-term.tar.gz
+          files: msys2-term.zip
           body: |
             ## MSYS2 Terminal Package
 
@@ -108,7 +113,7 @@ jobs:
             | ripgrep | ${{ steps.versions.outputs.rg_version }} |
 
             ### Quick Start
-            1. Extract `msys2-term.tar.gz` to desired location (e.g., `C:\msys2`)
+            1. Extract `msys2-term.zip` to desired location (e.g., `C:\msys2`)
             2. Run `ucrt64.exe` or `msys2_shell.cmd -ucrt64` to open terminal
             3. Use `pacman -S <package>` to install additional packages
 
