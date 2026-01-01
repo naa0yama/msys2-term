@@ -30,6 +30,7 @@ jobs:
             mingw-w64-ucrt-x86_64-fzf
             mingw-w64-ucrt-x86_64-ripgrep
             mintty
+            ncurses
             tmux
 
       - name: Verify packages installed
