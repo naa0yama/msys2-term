@@ -15,9 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup MSYS2
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
+          location: D:\
           update: true
           install: >-
             base
@@ -66,32 +68,17 @@ jobs:
 
           echo "Cleanup complete"
 
-      - name: Get MSYS2 root path
-        id: msys2path
-        shell: pwsh
-        run: |
-          $msysRoot = (Get-Command msys2).Source | Split-Path | Split-Path
-          echo "MSYS2_ROOT=$msysRoot" >> $env:GITHUB_OUTPUT
-          Write-Host "MSYS2 root: $msysRoot"
-
       - name: Create archive
         shell: pwsh
         run: |
-          $msysRoot = "${{ steps.msys2path.outputs.MSYS2_ROOT }}"
-          $archiveName = "msys2-term.tar.gz"
-          $tempArchive = "$env:RUNNER_TEMP\msys2-term.tar.gz"
-
+          $msysRoot = "${{ steps.msys2.outputs.msys2-location }}"
           Write-Host "MSYS2 root: $msysRoot"
-          Write-Host "Creating archive..."
 
-          # Create archive using MSYS2's tar (output to runner temp, not inside msys2)
-          & "$msysRoot\usr\bin\bash.exe" -lc "tar -C / --exclude='./proc' --exclude='./dev/fd' --exclude='./dev/std*' -czf '$($tempArchive -replace '\\','/')' ."
-
-          # Move to workspace
-          Move-Item $tempArchive -Destination "." -Force
+          # Create archive using tar from MSYS2
+          & "$msysRoot\usr\bin\tar.exe" -C "$msysRoot" --exclude='./proc' --exclude='./dev/fd' --exclude='./dev/std*' -czf msys2-term.tar.gz .
 
           # Show archive size
-          $size = (Get-Item $archiveName).Length / 1MB
+          $size = (Get-Item "msys2-term.tar.gz").Length / 1MB
           Write-Host "Archive size: $([math]::Round($size, 2)) MB"
 
       - name: Upload artifact
