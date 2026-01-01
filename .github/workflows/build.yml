@@ -59,9 +59,7 @@ jobs:
           rm -rf /var/log/*
           rm -rf /tmp/*
 
-          # Show disk usage
-          echo "=== MSYS2 disk usage ==="
-          du -sh /
+          echo "Cleanup complete"
 
       - name: Create launcher scripts
         shell: msys2 {0}
