@@ -25,7 +25,6 @@ jobs:
           update: true
           install: >-
             base
-            bash
             coreutils
             fish
             mingw-w64-ucrt-x86_64-fzf
@@ -53,6 +52,14 @@ jobs:
           echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "fish_version=$(pacman -Q fish | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Copy skeleton files
+        shell: msys2 {0}
+        run: |
+          echo "=== Copying skeleton files ==="
+          cp -rv skel/. /etc/skel/
+          echo "=== Skeleton files installed ==="
+          find /etc/skel -type f
 
       - name: Clean up MSYS2 environment
         shell: msys2 {0}
@@ -115,15 +122,17 @@ jobs:
             Portable MSYS2 environment with **pacman support**.
 
             ### Pre-installed Tools
-            | Tool | Version |
-            |------|---------|
-            | mintty | ${{ steps.versions.outputs.mintty_version }} |
-            | fish | ${{ steps.versions.outputs.fish_version }} |
-            | tmux | ${{ steps.versions.outputs.tmux_version }} |
-            | fzf | ${{ steps.versions.outputs.fzf_version }} |
-            | ripgrep | ${{ steps.versions.outputs.rg_version }} |
+
+            | Tool    | Version                                      |
+            |---------|----------------------------------------------|
+            | mintty  | ${{ steps.versions.outputs.mintty_version }} |
+            | fish    | ${{ steps.versions.outputs.fish_version }}   |
+            | tmux    | ${{ steps.versions.outputs.tmux_version }}   |
+            | fzf     | ${{ steps.versions.outputs.fzf_version }}    |
+            | ripgrep | ${{ steps.versions.outputs.rg_version }}     |
 
             ### Quick Start
+
             1. Extract `msys2-term.zip` to desired location (e.g., `C:\msys2`)
             2. Run `ucrt64.exe` or `msys2_shell.cmd -ucrt64` to open terminal
             3. Use `pacman -S <package>` to install additional packages
