@@ -152,19 +152,18 @@ jobs:
           # Copy fish config from skel
           cp -r /etc/skel/.config/fish/. $HOME/.config/fish/
 
-          # Install Fisher and plugins using fish
+          # Install plugins using Fisher
           echo "=== Installing Fisher and plugins ==="
           fish -c '
-            # Install Fisher
+            # Source Fisher (do not use fisher install, it overwrites fish_plugins)
             curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
-            fisher install jorgebucaran/fisher
 
-            # Install plugins from fish_plugins
-            if test -f ~/.config/fish/fish_plugins
-              echo "Installing plugins from fish_plugins:"
-              cat ~/.config/fish/fish_plugins
-              fisher update
-            end
+            # Show fish_plugins content
+            echo "fish_plugins content:"
+            cat ~/.config/fish/fish_plugins
+
+            # Install all plugins from fish_plugins
+            fisher update
           '
 
           # Copy installed plugins back to skel
