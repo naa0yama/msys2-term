@@ -2,7 +2,7 @@
 
 function __fssh_get_ssh_cmd --description 'Get SSH command path'
 	if builtin set --query __fssh_ssh_cmd
-		builtin echo $__fssh_ssh_cmd
+		builtin echo "$__fssh_ssh_cmd"
 	else
 		builtin echo ssh
 	end
@@ -124,9 +124,9 @@ function ssh --description 'SSH with logging support'
 	end
 
 	# Determine which ssh-add to use
-	builtin set --local ssh_add_cmd ssh-add
+	builtin set --local ssh_add_cmd "ssh-add"
 	if builtin set --query __fssh_ssh_add_cmd
-		builtin set ssh_add_cmd $__fssh_ssh_add_cmd
+		builtin set ssh_add_cmd "$__fssh_ssh_add_cmd"
 	end
 	__fssh_debug "ssh-add command: $ssh_add_cmd"
 
@@ -150,21 +150,21 @@ function ssh --description 'SSH with logging support'
 
 	# Get connection info: user, host, port
 	builtin set --local conn_info (string split \t -- (__fssh_get_connection_info "$target_host"))
-	builtin set --local ssh_user $conn_info[1]
-	builtin set --local ssh_host $conn_info[2]
-	builtin set --local ssh_port $conn_info[3]
+	builtin set --local ssh_user "$conn_info[1]"
+	builtin set --local ssh_host "$conn_info[2]"
+	builtin set --local ssh_port "$conn_info[3]"
 	builtin set --local ssh_info "$ssh_user@$ssh_host:$ssh_port"
 
 	__fssh_debug "Connection info - user: $ssh_user, host: $ssh_host, port: $ssh_port"
 
 	# Generate log file path
-	# Format: YYYYMMDDTHHMMSS_{session}-{window}-{pane}_{user}@{host}:{port}.log
+	# Format: YYYYMMDDTHHMMSS_{session}-{window}{pane}_{user}@{host}-{port}.log
 	builtin set --local log_file ""
 	if type --query tmux; and builtin set --query TMUX
 		builtin set --local date_path "$(date '+%Y/%m/%d')"
 		builtin set --local timestamp_file "$(date '+%Y%m%dT%H%M%S')"
-		builtin set --local pane_info "$(tmux display-message -p "#{session_name}-#{window_index}-#{pane_index}")"
-		builtin set log_file "$FSSH_LOG_DIR_PREFIX$date_path/{$timestamp_file}_{$pane_info}_{$ssh_user}@{$ssh_host}:{$ssh_port}.log"
+		builtin set --local pane_info "$(tmux display-message -p "#{session_name}-#{window_index}#{pane_index}")"
+		builtin set log_file "$FSSH_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_$ssh_user@$ssh_host-$ssh_port.log"
 
 		__fssh_debug "log_file: $log_file"
 
@@ -202,8 +202,9 @@ function ssh --description 'SSH with logging support'
 	# Output disconnection info
 	set_color blue
 	builtin echo ""
-	builtin echo "#= ============================================================================="
-	builtin echo "#= Disconnected     | Timestamp          "(date +%Y-%m-%dT%H:%M:%S%z)
+	builtin echo "#= >> Disconnected << =========================================================="
+	builtin echo "#= Timestamp        | $(date +%Y-%m-%dT%H:%M:%S%z)"
+	builtin echo "#= Logfile          | $log_file"
 	builtin echo "#= ============================================================================="
 	set_color normal
 
