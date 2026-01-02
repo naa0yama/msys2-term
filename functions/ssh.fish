@@ -17,19 +17,19 @@ function __fssh_get_ssh_config_args --description 'Get SSH config args for Windo
 end
 
 function __fssh_get_connection_info --description 'Get user@host:port from ssh -G'
-	builtin set --local ssh_cmd (__fssh_get_ssh_cmd)
+	builtin set --local ssh_cmd "$(__fssh_get_ssh_cmd)"
 	builtin set --local config_args (__fssh_get_ssh_config_args)
-	builtin set --local target $argv[1]
+	builtin set --local target "$argv[1]"
 
 	__fssh_debug "ssh -G command: $ssh_cmd $config_args -G $target"
 
 	# Set HOME for Windows OpenSSH to resolve Include paths correctly
-	builtin set --local ssh_env
+	builtin set --local original_home "$HOME"
 	if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
-		builtin set ssh_env HOME=(cygpath -m "$USERPROFILE")
+		builtin set --export HOME "$(cygpath -m "$USERPROFILE")"
 	end
 
-	builtin set --local result (env $ssh_env command $ssh_cmd $config_args -G "$target" 2>/dev/null | awk '
+	builtin set --local result (command "$ssh_cmd" $config_args -G "$target" 2>/dev/null | awk '
 		/^user / { user=$2 }
 		/^hostname / { host=$2 }
 		/^port / { port=$2 }
@@ -40,12 +40,17 @@ function __fssh_get_connection_info --description 'Get user@host:port from ssh -
 		}
 	')
 
+	# Restore original HOME
+	if builtin test -n "$original_home"
+		builtin set --export HOME "$original_home"
+	end
+
 	__fssh_debug "ssh -G result: $result"
-	builtin echo $result
+	builtin echo "$result"
 end
 
 function __fssh_start_logging --description 'Start tmux pane logging'
-	builtin set --local log_file $argv[1]
+	builtin set --local log_file "$argv[1]"
 
 	__fssh_debug "Starting logging to: $log_file"
 
@@ -53,7 +58,7 @@ function __fssh_start_logging --description 'Start tmux pane logging'
 	command mkdir -p (dirname "$log_file")
 
 	# Set pane logging state
-	builtin set --local pane_id (tmux display-message -p "#{session_name}_#{window_index}_#{pane_index}")
+	builtin set --local pane_id "$(tmux display-message -p "#{session_name}_#{window_index}_#{pane_index}")"
 	command tmux set-option -gq "@$pane_id" "logging"
 
 	# Start pipe-pane with timestamp prefix
@@ -64,7 +69,7 @@ function __fssh_start_logging --description 'Start tmux pane logging'
 end
 
 function __fssh_stop_logging --description 'Stop tmux pane logging'
-	builtin set --local log_file $argv[1]
+	builtin set --local log_file "$argv[1]"
 
 	__fssh_debug "Stopping logging: $log_file"
 
@@ -72,7 +77,7 @@ function __fssh_stop_logging --description 'Stop tmux pane logging'
 	command tmux pipe-pane
 
 	# Set pane logging state
-	builtin set --local pane_id (tmux display-message -p "#{session_name}_#{window_index}_#{pane_index}")
+	builtin set --local pane_id "$(tmux display-message -p "#{session_name}_#{window_index}_#{pane_index}")"
 	command tmux set-option -gq "@$pane_id" "not logging"
 
 	# Append disconnect timestamp
@@ -84,10 +89,10 @@ function __fssh_stop_logging --description 'Stop tmux pane logging'
 end
 
 function __fssh_status_splash --description 'SSH status splash'
-	builtin set --local timestamp (date +%Y-%m-%dT%H:%M:%S%z)
-	builtin set --local ssh_info $argv[1]
-	builtin set --local log_file $argv[2]
-	builtin set --local target_host $argv[-1]
+	builtin set --local timestamp "$(date +%Y-%m-%dT%H:%M:%S%z)"
+	builtin set --local ssh_info "$argv[1]"
+	builtin set --local log_file "$argv[2]"
+	builtin set --local target_host "$argv[-1]"
 
 	builtin echo ""
 	builtin echo "#= ============================================================================="
@@ -140,7 +145,7 @@ function ssh --description 'SSH with logging support'
 	end
 
 	# Get target host (last argument)
-	builtin set --local target_host $argv[-1]
+	builtin set --local target_host "$argv[-1]"
 	__fssh_debug "target_host: $target_host"
 
 	# Get connection info: user, host, port
@@ -156,9 +161,9 @@ function ssh --description 'SSH with logging support'
 	# Format: YYYYMMDDTHHMMSS_{session}-{window}-{pane}_{user}@{host}:{port}.log
 	builtin set --local log_file ""
 	if type --query tmux; and builtin set --query TMUX
-		builtin set --local date_path (date '+%Y/%m/%d')
-		builtin set --local timestamp_file (date '+%Y%m%dT%H%M%S')
-		builtin set --local pane_info (tmux display-message -p "#{session_name}-#{window_index}-#{pane_index}")
+		builtin set --local date_path "$(date '+%Y/%m/%d')"
+		builtin set --local timestamp_file "$(date '+%Y%m%dT%H%M%S')"
+		builtin set --local pane_info "$(tmux display-message -p "#{session_name}-#{window_index}-#{pane_index}")"
 		builtin set log_file "$FSSH_LOG_DIR_PREFIX$date_path/{$timestamp_file}_{$pane_info}_{$ssh_user}@{$ssh_host}:{$ssh_port}.log"
 
 		__fssh_debug "log_file: $log_file"
@@ -176,18 +181,23 @@ function ssh --description 'SSH with logging support'
 	__fssh_status_splash "$ssh_info" "$log_file" $argv
 
 	# Execute SSH
-	builtin set --local ssh_cmd (__fssh_get_ssh_cmd)
+	builtin set --local ssh_cmd "$(__fssh_get_ssh_cmd)"
 	builtin set --local config_args (__fssh_get_ssh_config_args)
 
 	# Set HOME for Windows OpenSSH to resolve Include paths correctly
-	builtin set --local ssh_env
+	builtin set --local original_home "$HOME"
 	if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
-		builtin set ssh_env HOME=(cygpath -m "$USERPROFILE")
+		builtin set --export HOME "$(cygpath -m "$USERPROFILE")"
 	end
 
-	__fssh_debug "Executing: $ssh_env $ssh_cmd $config_args $argv"
+	__fssh_debug "Executing: $ssh_cmd $config_args $argv"
 
-	env $ssh_env command $ssh_cmd $config_args $argv
+	command "$ssh_cmd" $config_args $argv
+
+	# Restore original HOME
+	if builtin test -n "$original_home"
+		builtin set --export HOME "$original_home"
+	end
 
 	# Output disconnection info
 	set_color blue

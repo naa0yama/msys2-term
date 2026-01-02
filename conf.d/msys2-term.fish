@@ -17,7 +17,7 @@ end
 # Default configuration (override these in your config.fish)
 # MSYS2: use Windows userprofile, otherwise use $HOME
 if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
-	builtin set --local win_home (cygpath -u "$USERPROFILE")
+	builtin set --local win_home "$(cygpath -u "$USERPROFILE")"
 	builtin set --query FSSH_SSH_CONF_DIR;		or builtin set --global FSSH_SSH_CONF_DIR "$win_home/.ssh/conf.d/envs"
 	builtin set --query FSSH_LOG_DIR_PREFIX;	or builtin set --global FSSH_LOG_DIR_PREFIX "$win_home/.dotfiles/logs/tmux/"
 	__fssh_debug_init "MSYS2 detected: MSYSTEM=$MSYSTEM"
@@ -76,7 +76,7 @@ if builtin set --query MSYSTEM
 		builtin set --global --export __fssh_ssh_keygen_cmd "$FSSH_WIN_SSH_DIR/ssh-keygen.exe"
 
 		# Windows SSH config path (use cygpath -m for mixed path - forward slashes work on Windows)
-		builtin set --global --export __fssh_ssh_config (cygpath -m "$USERPROFILE/.ssh/config")
+		builtin set --global --export __fssh_ssh_config "$(cygpath -m "$USERPROFILE/.ssh/config")"
 
 		__fssh_debug_init "__fssh_ssh_cmd=$__fssh_ssh_cmd"
 		__fssh_debug_init "__fssh_ssh_add_cmd=$__fssh_ssh_add_cmd"
