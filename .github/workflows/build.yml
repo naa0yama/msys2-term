@@ -28,6 +28,7 @@ jobs:
             coreutils
             curl
             fish
+            mingw-w64-ucrt-x86_64-ansifilter
             mingw-w64-ucrt-x86_64-fzf
             mingw-w64-ucrt-x86_64-ripgrep
             mintty
@@ -38,21 +39,59 @@ jobs:
         shell: msys2 {0}
         run: |
           echo "=== Installed packages ==="
-          pacman -Q tmux fish mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
+          pacman -Q tmux fish mingw-w64-ucrt-x86_64-ansifilter mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
 
           echo "=== Binary locations ==="
           which tmux fish
-          ls -la /ucrt64/bin/fzf.exe /ucrt64/bin/rg.exe
+          ls -la /ucrt64/bin/ansifilter.exe /ucrt64/bin/fzf.exe /ucrt64/bin/rg.exe
+
+      - name: Fish syntax and lint check
+        shell: msys2 {0}
+        run: |
+          echo "=== Fish syntax check ==="
+          error_count=0
+          for f in functions/*.fish completions/*.fish conf.d/*.fish; do
+            if [ -f "$f" ]; then
+              if fish --no-execute "$f" 2>&1; then
+                echo "OK: $f"
+              else
+                echo "FAIL: $f"
+                error_count=$((error_count + 1))
+              fi
+            fi
+          done
+
+          echo ""
+          echo "=== Fish indent check (formatting) ==="
+          for f in functions/*.fish completions/*.fish conf.d/*.fish; do
+            if [ -f "$f" ]; then
+              if diff -q "$f" <(fish_indent < "$f") > /dev/null 2>&1; then
+                echo "OK: $f"
+              else
+                echo "WARN: $f (formatting differs from fish_indent)"
+              fi
+            fi
+          done
+
+          if [ $error_count -gt 0 ]; then
+            echo ""
+            echo "ERROR: $error_count file(s) failed syntax check"
+            exit 1
+          fi
+
+          echo ""
+          echo "All syntax checks passed"
 
       - name: Get package versions
         id: versions
         shell: msys2 {0}
         run: |
-          echo "tmux_version=$(pacman -Q tmux | awk '{print $2}')" >> $GITHUB_OUTPUT
-          echo "fzf_version=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')" >> $GITHUB_OUTPUT
-          echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
-          echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "ansifilter_version=$(pacman -Q mingw-w64-ucrt-x86_64-ansifilter | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "fish_version=$(pacman -Q fish | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "fzf_version=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "tmux_version=$(pacman -Q tmux | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Copy skeleton files
         shell: msys2 {0}
@@ -89,9 +128,9 @@ jobs:
 
           # Copy installed plugins back to skel
           echo "=== Copying plugins to skel ==="
-          cp -rv $HOME/.config/fish/functions /etc/skel/.config/fish/
-          cp -rv $HOME/.config/fish/conf.d /etc/skel/.config/fish/ 2>/dev/null || true
           cp -rv $HOME/.config/fish/completions /etc/skel/.config/fish/ 2>/dev/null || true
+          cp -rv $HOME/.config/fish/conf.d /etc/skel/.config/fish/ 2>/dev/null || true
+          cp -rv $HOME/.config/fish/functions /etc/skel/.config/fish/
 
           echo "=== Fisher installation complete ==="
           find /etc/skel/.config/fish -type f
@@ -158,13 +197,15 @@ jobs:
 
             ### Pre-installed Tools
 
-            | Tool     | Version                                        |
-            |----------|------------------------------------------------|
-            | mintty   | ${{ steps.versions.outputs.mintty_version }}   |
-            | fish     | ${{ steps.versions.outputs.fish_version }}     |
-            | tmux     | ${{ steps.versions.outputs.tmux_version }}     |
-            | fzf      | ${{ steps.versions.outputs.fzf_version }}      |
-            | ripgrep  | ${{ steps.versions.outputs.rg_version }}       |
+            | Tool       | Version                                          |
+            |------------|--------------------------------------------------|
+            | mintty     | ${{ steps.versions.outputs.mintty_version }}     |
+            | fish       | ${{ steps.versions.outputs.fish_version }}       |
+            |            |                                                  |
+            | ansifilter | ${{ steps.versions.outputs.ansifilter_version }} |
+            | fzf        | ${{ steps.versions.outputs.fzf_version }}        |
+            | ripgrep    | ${{ steps.versions.outputs.rg_version }}         |
+            | tmux       | ${{ steps.versions.outputs.tmux_version }}       |
 
             ### Quick Start
 
