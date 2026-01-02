@@ -26,6 +26,7 @@ jobs:
           install: >-
             base
             coreutils
+            curl
             fish
             mingw-w64-ucrt-x86_64-fzf
             mingw-w64-ucrt-x86_64-ripgrep
@@ -60,6 +61,40 @@ jobs:
           cp -rv skel/. /etc/skel/
           echo "=== Skeleton files installed ==="
           find /etc/skel -type f
+
+      - name: Install Fisher and plugins
+        shell: msys2 {0}
+        run: |
+          # Create temporary home for Fisher installation
+          export HOME=/tmp/fisher-setup
+          mkdir -p $HOME/.config/fish
+
+          # Copy fish config from skel
+          cp -r /etc/skel/.config/fish/. $HOME/.config/fish/
+
+          # Install Fisher and plugins using fish
+          echo "=== Installing Fisher and plugins ==="
+          fish -c '
+            # Install Fisher
+            curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+            fisher install jorgebucaran/fisher
+
+            # Install plugins from fish_plugins
+            if test -f ~/.config/fish/fish_plugins
+              echo "Installing plugins from fish_plugins:"
+              cat ~/.config/fish/fish_plugins
+              fisher update
+            end
+          '
+
+          # Copy installed plugins back to skel
+          echo "=== Copying plugins to skel ==="
+          cp -rv $HOME/.config/fish/functions /etc/skel/.config/fish/
+          cp -rv $HOME/.config/fish/conf.d /etc/skel/.config/fish/ 2>/dev/null || true
+          cp -rv $HOME/.config/fish/completions /etc/skel/.config/fish/ 2>/dev/null || true
+
+          echo "=== Fisher installation complete ==="
+          find /etc/skel/.config/fish -type f
 
       - name: Clean up MSYS2 environment
         shell: msys2 {0}
@@ -123,13 +158,13 @@ jobs:
 
             ### Pre-installed Tools
 
-            | Tool    | Version                                      |
-            |---------|----------------------------------------------|
-            | mintty  | ${{ steps.versions.outputs.mintty_version }} |
-            | fish    | ${{ steps.versions.outputs.fish_version }}   |
-            | tmux    | ${{ steps.versions.outputs.tmux_version }}   |
-            | fzf     | ${{ steps.versions.outputs.fzf_version }}    |
-            | ripgrep | ${{ steps.versions.outputs.rg_version }}     |
+            | Tool     | Version                                        |
+            |----------|------------------------------------------------|
+            | mintty   | ${{ steps.versions.outputs.mintty_version }}   |
+            | fish     | ${{ steps.versions.outputs.fish_version }}     |
+            | tmux     | ${{ steps.versions.outputs.tmux_version }}     |
+            | fzf      | ${{ steps.versions.outputs.fzf_version }}      |
+            | ripgrep  | ${{ steps.versions.outputs.rg_version }}       |
 
             ### Quick Start
 

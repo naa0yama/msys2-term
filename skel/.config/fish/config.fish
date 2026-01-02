@@ -1,18 +1,9 @@
 #!/usr/bin/env fish
 
-function __check --description 'MSYS2 check'
-	for command in "fish" "tmux" "fzf" "rg"
-		if ! type --query "$command"
-			echo "command $command"
-			type "$command"
-			return 1
-		end
-	end
-end
-
+#- -----------------------------------------------------------------------------
+#- MSYS2 dedicated settings
+#- -----------------------------------------------------------------------------
 if set -q MSYSTEM
-	# MSYS2 専用設定
-
 	# OpenSSH
 	alias        ssh='/c/Program\ Files/OpenSSH/ssh.exe'
 	alias    ssh-add='/c/Program\ Files/OpenSSH/ssh-add.exe'
