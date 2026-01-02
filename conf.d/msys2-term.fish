@@ -8,9 +8,9 @@
 # Debug output function (inline for conf.d, before functions are loaded)
 function __fssh_debug_init --description 'Debug output for init phase'
 	if builtin set --query FSSH_DEBUG; and builtin test "$FSSH_DEBUG" = true
-		set_color brblack
-		builtin echo "[DEBUG:init] $argv"
-		set_color normal
+		set_color brblack >&2
+		builtin echo "[DEBUG:init] $argv" >&2
+		set_color normal >&2
 	end
 end
 
@@ -75,8 +75,8 @@ if builtin set --query MSYSTEM
 		builtin set --global --export __fssh_ssh_add_cmd "$FSSH_WIN_SSH_DIR/ssh-add.exe"
 		builtin set --global --export __fssh_ssh_keygen_cmd "$FSSH_WIN_SSH_DIR/ssh-keygen.exe"
 
-		# Windows SSH config path (use cygpath -m for mixed path with forward slashes)
-		builtin set --global --export __fssh_ssh_config (cygpath -m "$USERPROFILE/.ssh/config")
+		# Windows SSH config path (use cygpath -w for native Windows path)
+		builtin set --global --export __fssh_ssh_config (cygpath -w "$USERPROFILE/.ssh/config")
 
 		__fssh_debug_init "__fssh_ssh_cmd=$__fssh_ssh_cmd"
 		__fssh_debug_init "__fssh_ssh_add_cmd=$__fssh_ssh_add_cmd"
