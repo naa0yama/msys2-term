@@ -1,0 +1,30 @@
+---
+# Ref: https://github.com/actions/labeler/tree/main#pull-request-labeler
+
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+fish:
+  - changed-files:
+      - any-glob-to-any-file: "completions/**"
+      - any-glob-to-any-file: "conf.d/**"
+      - any-glob-to-any-file: "functions/**"
+
+MSYS2:
+  - changed-files:
+      - any-glob-to-any-file: "skel/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+
+renovate:
+  - changed-files:
+      - any-glob-to-any-file: "renovate.json"
+
+# Branch pattern
+develop:
+  - head-branch: ["^dev/"]
