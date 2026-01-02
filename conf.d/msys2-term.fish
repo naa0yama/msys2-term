@@ -42,6 +42,7 @@ function _msys2_term_uninstall --on-event msys2-term_uninstall
 	builtin set --erase __fssh_ssh_cmd
 	builtin set --erase __fssh_ssh_add_cmd
 	builtin set --erase __fssh_ssh_keygen_cmd
+	builtin set --erase __fssh_ssh_config
 end
 
 # MSYS2 environment detection and SSH configuration
@@ -51,6 +52,9 @@ if builtin set --query MSYSTEM
 		builtin set --global --export __fssh_ssh_cmd "$FSSH_WIN_SSH_DIR/ssh.exe"
 		builtin set --global --export __fssh_ssh_add_cmd "$FSSH_WIN_SSH_DIR/ssh-add.exe"
 		builtin set --global --export __fssh_ssh_keygen_cmd "$FSSH_WIN_SSH_DIR/ssh-keygen.exe"
+
+		# Windows SSH config path (Windows path format for ssh.exe -F option)
+		builtin set --global --export __fssh_ssh_config (cygpath -w "$USERPROFILE/.ssh/config")
 
 		alias ssh-add="$__fssh_ssh_add_cmd"
 		alias ssh-keygen="$__fssh_ssh_keygen_cmd"

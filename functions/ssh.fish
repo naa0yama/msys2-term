@@ -8,11 +8,17 @@ function __fssh_get_ssh_cmd --description 'Get SSH command path'
 	end
 end
 
+function __fssh_get_ssh_config_args --description 'Get SSH config args for Windows OpenSSH'
+	if builtin set --query __fssh_ssh_config
+		builtin echo -F "$__fssh_ssh_config"
+	end
+end
+
 function __fssh_get_connection_info --description 'Get user@host:port from ssh -G'
 	builtin set --local ssh_cmd (__fssh_get_ssh_cmd)
 	builtin set --local target $argv[1]
 
-	command $ssh_cmd -G "$target" 2>/dev/null | awk '
+	command $ssh_cmd (__fssh_get_ssh_config_args) -G "$target" 2>/dev/null | awk '
 		/^user / { user=$2 }
 		/^hostname / { host=$2 }
 		/^port / { port=$2 }
@@ -127,7 +133,7 @@ function ssh --description 'SSH with logging support'
 
 	# Execute SSH
 	builtin set --local ssh_cmd (__fssh_get_ssh_cmd)
-	command $ssh_cmd $argv
+	command $ssh_cmd (__fssh_get_ssh_config_args) $argv
 
 	# Output disconnection info
 	set_color blue
