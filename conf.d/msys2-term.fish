@@ -75,8 +75,8 @@ if builtin set --query MSYSTEM
 		builtin set --global --export __fssh_ssh_add_cmd "$FSSH_WIN_SSH_DIR/ssh-add.exe"
 		builtin set --global --export __fssh_ssh_keygen_cmd "$FSSH_WIN_SSH_DIR/ssh-keygen.exe"
 
-		# Windows SSH config path (use cygpath -w for native Windows path)
-		builtin set --global --export __fssh_ssh_config (cygpath -w "$USERPROFILE/.ssh/config")
+		# Windows SSH config path (use cygpath -m for mixed path - forward slashes work on Windows)
+		builtin set --global --export __fssh_ssh_config (cygpath -m "$USERPROFILE/.ssh/config")
 
 		__fssh_debug_init "__fssh_ssh_cmd=$__fssh_ssh_cmd"
 		__fssh_debug_init "__fssh_ssh_add_cmd=$__fssh_ssh_add_cmd"

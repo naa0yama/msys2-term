@@ -23,7 +23,13 @@ function __fssh_get_connection_info --description 'Get user@host:port from ssh -
 
 	__fssh_debug "ssh -G command: $ssh_cmd $config_args -G $target"
 
-	builtin set --local result (command $ssh_cmd $config_args -G "$target" 2>/dev/null | awk '
+	# Set HOME for Windows OpenSSH to resolve Include paths correctly
+	builtin set --local ssh_env
+	if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
+		builtin set ssh_env HOME=(cygpath -m "$USERPROFILE")
+	end
+
+	builtin set --local result (env $ssh_env command $ssh_cmd $config_args -G "$target" 2>/dev/null | awk '
 		/^user / { user=$2 }
 		/^hostname / { host=$2 }
 		/^port / { port=$2 }
@@ -79,8 +85,9 @@ end
 
 function __fssh_status_splash --description 'SSH status splash'
 	builtin set --local timestamp (date +%Y-%m-%dT%H:%M:%S%z)
-	builtin set --local target_host $argv[-1]
 	builtin set --local ssh_info $argv[1]
+	builtin set --local log_file $argv[2]
+	builtin set --local target_host $argv[-1]
 
 	builtin echo ""
 	builtin echo "#= ============================================================================="
@@ -88,8 +95,9 @@ function __fssh_status_splash --description 'SSH status splash'
 	builtin echo "#= | | ___   __ _   | Name                $target_host"
 	builtin echo "#= | |/ _ \\ / _  |  | User@HostName:Port  $ssh_info"
 	builtin echo "#= | | (_) | (_| |  | Timestamp           $timestamp"
-	builtin echo "#= |_|\\___/ \\__, |  | Command \$argv       $argv[2..-1]"
+	builtin echo "#= |_|\\___/ \\__, |  | Command \$argv       $argv[3..-1]"
 	builtin echo "#=          |___/   |"
+	builtin echo "#= $log_file"
 	builtin echo "#= ============================================================================="
 	builtin echo ""
 end
@@ -158,18 +166,28 @@ function ssh --description 'SSH with logging support'
 		# Start logging
 		__fssh_start_logging "$log_file"
 	else
+		set_color yellow
+		builtin echo "[WARN ] tmux not available or not in tmux session, logging disabled"
+		set_color normal
 		__fssh_debug "tmux not available or not in tmux session, logging disabled"
 	end
 
 	# Show splash
-	__fssh_status_splash "$ssh_info" $argv
+	__fssh_status_splash "$ssh_info" "$log_file" $argv
 
 	# Execute SSH
 	builtin set --local ssh_cmd (__fssh_get_ssh_cmd)
 	builtin set --local config_args (__fssh_get_ssh_config_args)
-	__fssh_debug "Executing: $ssh_cmd $config_args $argv"
 
-	command $ssh_cmd $config_args $argv
+	# Set HOME for Windows OpenSSH to resolve Include paths correctly
+	builtin set --local ssh_env
+	if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
+		builtin set ssh_env HOME=(cygpath -m "$USERPROFILE")
+	end
+
+	__fssh_debug "Executing: $ssh_env $ssh_cmd $config_args $argv"
+
+	env $ssh_env command $ssh_cmd $config_args $argv
 
 	# Output disconnection info
 	set_color blue
