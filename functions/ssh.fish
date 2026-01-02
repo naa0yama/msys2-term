@@ -215,7 +215,7 @@ function __fssh_status_splash --description 'SSH status splash'
 	builtin echo "#=          |___/   |"
 	builtin echo "#= $log_file"
 	builtin echo "#= ----------------------------------------------------------------------"
-	builtin echo ""
+	builtin echo "#="
 
 	# Show SSH Config
 	builtin set --local config_details (__fssh_get_ssh_config_details "$target_host")
