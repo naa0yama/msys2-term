@@ -141,39 +141,24 @@ jobs:
           cp -rv skel/. /etc/skel/
           echo "=== Skeleton files installed ==="
           find /etc/skel -type f
+          echo ""
+          echo "=== fish_plugins content ==="
+          cat /etc/skel/.config/fish/fish_plugins
 
-      - name: Install Fisher and plugins
+      - name: Create fssh-release file
         shell: msys2 {0}
         run: |
-          # Create temporary home for Fisher installation
-          export HOME=/tmp/fisher-setup
-          mkdir -p $HOME/.config/fish
+          cat > /etc/fssh-release <<EOF
+          BUILD_REPOSITORY="${{ github.server_url }}/${{ github.repository }}"
+          BUILD_BASE_REF="${{ github.base_ref || github.ref_name }}"
+          BUILD_DATE="$(date +%Y-%m-%dT%H:%M:%S%z)"
+          BUILD_ACTION="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BUILD_SHA="${{ github.sha }}"
+          EOF
+          sed -i 's/^[[:space:]]*//' /etc/fssh-release
 
-          # Copy fish config from skel
-          cp -r /etc/skel/.config/fish/. $HOME/.config/fish/
-
-          # Install plugins using Fisher
-          echo "=== Installing Fisher and plugins ==="
-          fish -c '
-            # Source Fisher (do not use fisher install, it overwrites fish_plugins)
-            curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
-
-            # Show fish_plugins content
-            echo "fish_plugins content:"
-            cat ~/.config/fish/fish_plugins
-
-            # Install all plugins from fish_plugins
-            fisher update
-          '
-
-          # Copy installed plugins back to skel
-          echo "=== Copying plugins to skel ==="
-          cp -rv $HOME/.config/fish/completions /etc/skel/.config/fish/ 2>/dev/null || true
-          cp -rv $HOME/.config/fish/conf.d /etc/skel/.config/fish/ 2>/dev/null || true
-          cp -rv $HOME/.config/fish/functions /etc/skel/.config/fish/
-
-          echo "=== Fisher installation complete ==="
-          find /etc/skel/.config/fish -type f
+          echo "=== fssh-release content ==="
+          cat /etc/fssh-release
 
       - name: Clean up MSYS2 environment
         shell: msys2 {0}
@@ -319,6 +304,31 @@ jobs:
         with:
           name: msys2-term-${{ needs.build.outputs.short_sha }}
 
+      - name: Update fssh-release and rename artifact
+        id: release_zip
+        run: |
+          NEW_TAG="${{ steps.new_tag.outputs.new_tag }}"
+          OLD_ZIP="${{ needs.build.outputs.zip_name }}"
+          NEW_ZIP="msys2-term-${NEW_TAG}.zip"
+
+          # Extract, update fssh-release, re-zip
+          mkdir -p msys2-temp
+          unzip -q "$OLD_ZIP" -d msys2-temp
+
+          # Add BUILD_TAG to fssh-release
+          echo "BUILD_TAG=\"${NEW_TAG}\"" >> msys2-temp/etc/fssh-release
+          echo "=== Updated fssh-release ==="
+          cat msys2-temp/etc/fssh-release
+
+          # Re-create zip with new name
+          cd msys2-temp
+          zip -rq "../${NEW_ZIP}" .
+          cd ..
+          rm -rf msys2-temp "$OLD_ZIP"
+
+          echo "zip_name=$NEW_ZIP" >> $GITHUB_OUTPUT
+          echo "Created: $NEW_ZIP"
+
       - name: Get latest release tag
         id: latest_release
         run: |
@@ -373,7 +383,7 @@ jobs:
         with:
           name: ${{ steps.new_tag.outputs.new_tag }}
           tag_name: ${{ steps.new_tag.outputs.new_tag }}
-          files: ${{ needs.build.outputs.zip_name }}
+          files: ${{ steps.release_zip.outputs.zip_name }}
           generate_release_notes: true
           draft: false
           prerelease: false
@@ -414,7 +424,7 @@ jobs:
             const fs = require('fs');
             const newTag = "${{ steps.new_tag.outputs.new_tag }}";
             const latestTag = "${{ steps.latest_release.outputs.latest_tag }}";
-            const zipName = "${{ needs.build.outputs.zip_name }}";
+            const zipName = "${{ steps.release_zip.outputs.zip_name }}";
 
             const releaseParams = {
               owner: context.repo.owner,

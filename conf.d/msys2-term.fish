@@ -38,7 +38,7 @@ __fssh_debug_init "FSSH_WIN_GIT_DIR=$FSSH_WIN_GIT_DIR"
 
 # Dependency check on install
 function _msys2_term_install --on-event msys2-term_install
-	builtin set --local deps ansifilter awk find fzf rg ssh ssh-add tmux
+	builtin set --local deps ansifilter awk curl find fzf rg ssh ssh-add tmux
 	builtin set --local missing
 
 	for cmd in $deps
