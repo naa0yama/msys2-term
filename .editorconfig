@@ -11,6 +11,19 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+# ABCDE FGHIJ KLMNO PQRST UVWXY Z
+[.gitconfig.d/**.ini]
+indent_size = 8
+
+[*.md]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+
+[{**.ssh/**.conf,**.ssh/config}]
+indent_style = tab
+indent_size = 8
+
 [*.{yml,yaml}]
 indent_style = space
 indent_size = 2

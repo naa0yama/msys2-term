@@ -1,24 +1,24 @@
 #!/usr/bin/env fish
 
-function __fssh_check_fisher_updates --description 'Check for Fisher plugin updates via GitHub API'
+function __fterm_check_fisher_updates --description 'Check for Fisher plugin updates via GitHub API'
 	# Skip if Fisher is not installed
 	if not functions --query fisher
 		return
 	end
 
-	# Skip if disabled (set -U FSSH_FISHER_UPDATE_CHECK 0)
-	if builtin set --query FSSH_FISHER_UPDATE_CHECK; and builtin test "$FSSH_FISHER_UPDATE_CHECK" = 0
+	# Skip if disabled (set -U FTERM_FISHER_UPDATE_CHECK 0)
+	if builtin set --query FTERM_FISHER_UPDATE_CHECK; and builtin test "$FTERM_FISHER_UPDATE_CHECK" = 0
 		return
 	end
 
-	builtin set --local cache_dir ~/.cache/fssh
+	builtin set --local cache_dir ~/.cache/fterm
 	builtin set --local cache_file "$cache_dir/fisher_update_cache"
 	builtin set --local now (command date +%s)
 
 	# Default: 3 days = 259200 seconds
 	builtin set --local check_interval 259200
-	if builtin set --query FSSH_FISHER_UPDATE_INTERVAL
-		builtin set check_interval "$FSSH_FISHER_UPDATE_INTERVAL"
+	if builtin set --query FTERM_FISHER_UPDATE_INTERVAL
+		builtin set check_interval "$FTERM_FISHER_UPDATE_INTERVAL"
 	end
 
 	command mkdir --parents "$cache_dir"
@@ -39,7 +39,7 @@ function __fssh_check_fisher_updates --description 'Check for Fisher plugin upda
 
 	if builtin test "$should_fetch" -eq 1
 		# Fetch updates in background to not block shell startup
-		__fssh_fetch_fisher_updates &
+		__fterm_fetch_fisher_updates &
 		disown
 
 		# Show cached result if available
@@ -58,8 +58,8 @@ function __fssh_check_fisher_updates --description 'Check for Fisher plugin upda
 	end
 end
 
-function __fssh_fetch_fisher_updates --description 'Fetch Fisher plugin updates from GitHub API'
-	builtin set --local cache_dir ~/.cache/fssh
+function __fterm_fetch_fisher_updates --description 'Fetch Fisher plugin updates from GitHub API'
+	builtin set --local cache_dir ~/.cache/fterm
 	builtin set --local cache_file "$cache_dir/fisher_update_cache"
 	builtin set --local commits_file "$cache_dir/fisher_commits"
 	builtin set --local now (command date +%s)

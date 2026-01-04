@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Build MSYS2 Terminal Package
+name: Build Fuzzy Term Package
 
 on:
   pull_request:
@@ -188,7 +188,7 @@ jobs:
         run: |
           $msysRoot = "${{ steps.msys2.outputs.msys2-location }}"
           $shortSha = "${{ github.sha }}".Substring(0, 7)
-          $zipName = "msys2-term-$shortSha.zip"
+          $zipName = "fterm-$shortSha.zip"
 
           # Remove items that shouldn't be in the archive
           Remove-Item -Path "$msysRoot\proc" -Recurse -Force -ErrorAction SilentlyContinue
@@ -207,7 +207,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: msys2-term-${{ steps.archive.outputs.short_sha }}
+          name: fterm-${{ steps.archive.outputs.short_sha }}
           path: ${{ steps.archive.outputs.zip_name }}
           retention-days: 7
 
@@ -302,29 +302,29 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: msys2-term-${{ needs.build.outputs.short_sha }}
+          name: fterm-${{ needs.build.outputs.short_sha }}
 
       - name: Update fssh-release and rename artifact
         id: release_zip
         run: |
           NEW_TAG="${{ steps.new_tag.outputs.new_tag }}"
           OLD_ZIP="${{ needs.build.outputs.zip_name }}"
-          NEW_ZIP="msys2-term-${NEW_TAG}.zip"
+          NEW_ZIP="fterm-${NEW_TAG}.zip"
 
           # Extract, update fssh-release, re-zip
-          mkdir -p msys2-temp
-          unzip -q "$OLD_ZIP" -d msys2-temp
+          mkdir -p fterm-temp
+          unzip -q "$OLD_ZIP" -d fterm-temp
 
           # Add BUILD_TAG to fssh-release
-          echo "BUILD_TAG=\"${NEW_TAG}\"" >> msys2-temp/etc/fssh-release
+          echo "BUILD_TAG=\"${NEW_TAG}\"" >> fterm-temp/etc/fssh-release
           echo "=== Updated fssh-release ==="
-          cat msys2-temp/etc/fssh-release
+          cat fterm-temp/etc/fssh-release
 
           # Re-create zip with new name
-          cd msys2-temp
+          cd fterm-temp
           zip -rq "../${NEW_ZIP}" .
           cd ..
-          rm -rf msys2-temp "$OLD_ZIP"
+          rm -rf fterm-temp "$OLD_ZIP"
 
           echo "zip_name=$NEW_ZIP" >> $GITHUB_OUTPUT
           echo "Created: $NEW_ZIP"
@@ -389,7 +389,7 @@ jobs:
           prerelease: false
           make_latest: true
           body: |
-            ## MSYS2 Terminal Package
+            ## Fuzzy Term Package
 
             Portable MSYS2 environment with **pacman support**.
 
@@ -407,7 +407,7 @@ jobs:
 
             ### Quick Start
 
-            1. Extract `msys2-term.zip` to desired location (e.g., `C:\msys2`)
+            1. Extract `fterm.zip` to desired location (e.g., `C:\fterm`)
             2. Run `ucrt64.exe` or `msys2_shell.cmd -ucrt64` to open terminal
             3. Use `pacman -S <package>` to install additional packages
 
@@ -435,7 +435,7 @@ jobs:
               prerelease: true,
               make_latest: 'false',
               generate_release_notes: true,
-              body: `## MSYS2 Terminal Package (Beta)
+              body: `## Fuzzy Term Package (Beta)
 
             Portable MSYS2 environment with **pacman support**.
 

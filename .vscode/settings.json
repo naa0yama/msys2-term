@@ -1,0 +1,10 @@
+{
+	"files.associations": {
+		"*.conf": "ssh_config",
+		"**/conf.d/**/*.conf": "ssh_config",
+		"**/.ssh/config": "ssh_config"
+	},
+	"[ssh_config]": {
+		"editor.detectIndentation": false
+	}
+}
