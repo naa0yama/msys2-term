@@ -195,6 +195,18 @@ jobs:
           Remove-Item -Path "$msysRoot\dev\fd" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "$msysRoot\dev\std*" -Force -ErrorAction SilentlyContinue
 
+          # Remove unused MSYS2 environments (keep only ucrt64)
+          $unusedEnvs = @("clang64", "clangarm64", "mingw32", "mingw64", "msys2")
+          foreach ($env in $unusedEnvs) {
+            # Remove directory
+            Remove-Item -Path "$msysRoot\$env" -Recurse -Force -ErrorAction SilentlyContinue
+            # Remove launcher files
+            Remove-Item -Path "$msysRoot\$env.exe" -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "$msysRoot\$env.ico" -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "$msysRoot\$env.ini" -Force -ErrorAction SilentlyContinue
+          }
+          Write-Host "Removed unused environments: $($unusedEnvs -join ', ')"
+
           # Create zip with 7-Zip
           7z a -tzip -mx=5 $zipName "$msysRoot\*"
 

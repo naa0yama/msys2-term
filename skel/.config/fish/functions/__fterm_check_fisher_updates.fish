@@ -29,8 +29,8 @@ function __fterm_check_fisher_updates --description 'Check for Fisher plugin upd
 
 	if builtin test -f "$cache_file"
 		builtin set --local cache_data (command cat "$cache_file")
-		builtin set --local last_check (builtin echo "$cache_data" | command head --lines=1)
-		builtin set cached_updates (builtin echo "$cache_data" | command tail --lines=1)
+		builtin set --local last_check "$cache_data[1]"
+		builtin set cached_updates "$cache_data[2]"
 
 		if builtin test (math "$now - $last_check") -lt "$check_interval"
 			builtin set should_fetch 0
@@ -85,7 +85,7 @@ function __fterm_fetch_fisher_updates --description 'Fetch Fisher plugin updates
 
 		# Get latest commit SHA from GitHub API
 		builtin set --local api_url "https://api.github.com/repos/$owner/$repo/commits/HEAD"
-		builtin set --local response (command curl --silent --fail --header "User-Agent: naa0yama/fssh" "$api_url" 2>/dev/null)
+		builtin set --local response (command curl --silent --fail --header "User-Agent: naa0yama/fterm" "$api_url" 2>/dev/null)
 		if builtin test $status -ne 0
 			continue
 		end
