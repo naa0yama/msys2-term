@@ -66,6 +66,7 @@ end
 # Fisher plugin uninstall event
 function _fssh_uninstall --on-event fssh_uninstall
 	builtin set --erase __fssh_ssh_cmd
+	builtin set --erase __fssh_scp_cmd
 	builtin set --erase __fssh_ssh_add_cmd
 	builtin set --erase __fssh_ssh_keygen_cmd
 	builtin set --erase __fssh_ssh_config
@@ -79,6 +80,7 @@ if builtin set --query MSYSTEM
 	# Set SSH command path for MSYS2
 	if builtin test -x "$FTERM_SSH_WIN_DIR/ssh.exe"
 		builtin set --global --export __fssh_ssh_cmd "$FTERM_SSH_WIN_DIR/ssh.exe"
+		builtin set --global --export __fssh_scp_cmd "$FTERM_SSH_WIN_DIR/scp.exe"
 		builtin set --global --export __fssh_ssh_add_cmd "$FTERM_SSH_WIN_DIR/ssh-add.exe"
 		builtin set --global --export __fssh_ssh_keygen_cmd "$FTERM_SSH_WIN_DIR/ssh-keygen.exe"
 
@@ -86,13 +88,14 @@ if builtin set --query MSYSTEM
 		builtin set --global --export __fssh_ssh_config "$(cygpath -m "$USERPROFILE/.ssh/config")"
 
 		__fterm_debug_init "__fssh_ssh_cmd=$__fssh_ssh_cmd"
+		__fterm_debug_init "__fssh_scp_cmd=$__fssh_scp_cmd"
 		__fterm_debug_init "__fssh_ssh_add_cmd=$__fssh_ssh_add_cmd"
 		__fterm_debug_init "__fssh_ssh_keygen_cmd=$__fssh_ssh_keygen_cmd"
 		__fterm_debug_init "__fssh_ssh_config=$__fssh_ssh_config"
 
 		alias ssh-add="$__fssh_ssh_add_cmd"
 		alias ssh-keygen="$__fssh_ssh_keygen_cmd"
-		__fterm_debug_init "Aliases created: ssh-add, ssh-keygen"
+		__fterm_debug_init "Aliases created: ssh-add, ssh-keygen (scp is defined in functions/scp.fish)"
 	else
 		__fterm_debug_init "Windows OpenSSH not found at $FTERM_SSH_WIN_DIR/ssh.exe"
 	end
