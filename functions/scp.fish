@@ -51,14 +51,14 @@ function __fssh_scp_status_splash --description 'SCP status splash'
 	builtin set --local log_file "$argv[2]"
 	# argv[3..] are the original scp args
 
-	builtin echo "#= ======================================================================"
+	builtin echo "#= ============================================================================="
 	builtin echo "#=  ___  ___ _ __    | Remote Host(s)      $hosts"
 	builtin echo "#= / __|/ __| '_ \\   | Timestamp           $timestamp"
 	builtin echo "#= \\__ \\ (__| |_) |  | Command \$argv       $argv[3..-1]"
 	builtin echo "#= |___/\\___|  __/   |"
 	builtin echo "#=          |_|      |"
 	builtin echo "#= $log_file"
-	builtin echo "#= ----------------------------------------------------------------------"
+	builtin echo "#= -----------------------------------------------------------------------------"
 	builtin echo "#="
 
 	# Show SSH Config for each host
@@ -83,7 +83,7 @@ function __fssh_scp_status_splash --description 'SCP status splash'
 		end
 	end
 
-	builtin echo "#= ======================================================================"
+	builtin echo "#= ============================================================================="
 	builtin echo ""
 end
 
@@ -183,15 +183,15 @@ function scp --description 'SCP with logging support'
 	if builtin test $scp_status -eq 0
 		set_color green
 		builtin echo ""
-		builtin echo "#= >> Transfer Complete << ============================================="
+		builtin echo "#= >> Transfer Complete << ====================================================="
 	else
 		set_color red
 		builtin echo ""
-		builtin echo "#= >> Transfer Failed (exit: $scp_status) << =========================="
+		builtin echo "#= >> Transfer Failed (exit: $scp_status) << ============================================="
 	end
 	builtin echo "#=    Timestamp     | $(date +%Y-%m-%dT%H:%M:%S%z)"
 	builtin echo "#=    Logfile       | $log_file"
-	builtin echo "#= ======================================================================"
+	builtin echo "#= ============================================================================="
 	set_color normal
 
 	# Stop logging and cleanup (only if not dry-run)

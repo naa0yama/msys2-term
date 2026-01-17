@@ -207,14 +207,14 @@ function __fssh_status_splash --description 'SSH status splash'
 	builtin set --local target_host "$argv[3]"
 	# argv[4..] are the original ssh args
 
-	builtin echo "#= ======================================================================"
+	builtin echo "#= ============================================================================="
 	builtin echo "#= | | ___   __ _   | Config Name         $target_host"
 	builtin echo "#= | |/ _ \\ / _  |  | User@HostName:Port  $ssh_info"
 	builtin echo "#= | | (_) | (_| |  | Timestamp           $timestamp"
 	builtin echo "#= |_|\\___/ \\__, |  | Command \$argv       $argv[4..-1]"
 	builtin echo "#=          |___/   |"
 	builtin echo "#= $log_file"
-	builtin echo "#= ----------------------------------------------------------------------"
+	builtin echo "#= -----------------------------------------------------------------------------"
 	builtin echo "#="
 
 	# Show SSH Config
@@ -236,7 +236,7 @@ function __fssh_status_splash --description 'SSH status splash'
 	end
 
 	if builtin test -n "$config_details" -o -n "$matched_keys"
-		builtin echo "#= ======================================================================"
+		builtin echo "#= ============================================================================"
 	end
 	builtin echo ""
 end
@@ -341,10 +341,10 @@ function ssh --description 'SSH with logging support'
 	# Output disconnection info
 	set_color blue
 	builtin echo ""
-	builtin echo "#= >> Disconnected << ==================================================="
+	builtin echo "#= >> Disconnected << =========================================================="
 	builtin echo "#=    Timestamp     | $(date +%Y-%m-%dT%H:%M:%S%z)"
 	builtin echo "#=    Logfile       | $log_file"
-	builtin echo "#= ======================================================================"
+	builtin echo "#= ============================================================================="
 	set_color normal
 
 	# Stop logging and cleanup (only if not dry-run)
