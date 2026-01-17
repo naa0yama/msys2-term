@@ -266,7 +266,7 @@ function ssh --description 'SSH with logging support'
 
 	# Check SSH agent connection
 	# timeout is required because gpg4win (gpg-agent) can freeze, which would freeze the terminal
-	if not timeout --foreground --kill-after=5 3 "$ssh_add_cmd" --list >/dev/null 2>&1
+	if not timeout --foreground --kill-after=5 3 "$ssh_add_cmd" -l >/dev/null 2>&1
 		set_color red
 		builtin echo "[ERROR] ssh-add connection failed."
 		set_color normal
