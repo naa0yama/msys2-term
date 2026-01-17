@@ -28,8 +28,8 @@ else
 	builtin set --query FTERM_LOG_DIR_PREFIX;	or builtin set --global FTERM_LOG_DIR_PREFIX "$HOME/.dotfiles/logs/tmux/"
 	__fterm_debug_init "Non-MSYS2 environment"
 end
-builtin set --query FTERM_SSH_WIN_DIR;			or builtin set --global FTERM_SSH_WIN_DIR "/c/Program\ Files/OpenSSH"
-builtin set --query FTERM_SSH_WIN_GIT_DIR;		or builtin set --global FTERM_SSH_WIN_GIT_DIR "/c/Program\ Files/Git/cmd"
+builtin set --query FTERM_SSH_WIN_DIR;			or builtin set --global FTERM_SSH_WIN_DIR "/c/Program Files/OpenSSH"
+builtin set --query FTERM_SSH_WIN_GIT_DIR;		or builtin set --global FTERM_SSH_WIN_GIT_DIR "/c/Program Files/Git/cmd"
 
 __fterm_debug_init "FSSH_SSH_CONF_DIR=$FSSH_SSH_CONF_DIR"
 __fterm_debug_init "FTERM_LOG_DIR_PREFIX=$FTERM_LOG_DIR_PREFIX"
