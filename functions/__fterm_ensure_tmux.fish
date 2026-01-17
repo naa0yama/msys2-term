@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-function __fssh_ensure_tmux --description 'Ensure running inside tmux session'
+function __fterm_ensure_tmux --description 'Ensure running inside tmux session'
 	# argv[1] is the command name (ssh or scp)
 	# argv[2..] are the original arguments
 	builtin set --local cmd_name "$argv[1]"

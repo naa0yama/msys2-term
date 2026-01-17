@@ -1,92 +1,5 @@
 #!/usr/bin/env fish
 
-function __fssh_get_scp_cmd --description 'Get SCP command path'
-	if builtin set --query __fssh_scp_cmd
-		builtin echo "$__fssh_scp_cmd"
-	else
-		builtin echo scp
-	end
-end
-
-function __fssh_scp_is_dry_run --description 'Check if SCP args contain non-connecting options'
-	# SCP has no equivalent to ssh -G, but we check for help-like options
-	for arg in $argv
-		switch $arg
-			case --help -h
-				return 0
-		end
-	end
-	return 1
-end
-
-function __fssh_scp_extract_hosts --description 'Extract remote hosts from SCP arguments'
-	# SCP arguments can be: local_path, host:path, user@host:path
-	# Returns unique list of hosts (config names)
-	builtin set --local hosts
-
-	for arg in $argv
-		# Skip options and their arguments
-		if string match -qr '^-' -- "$arg"
-			continue
-		end
-
-		# Check if argument contains : (remote path indicator)
-		if string match -qr ':' -- "$arg"
-			# Extract host part (before :)
-			builtin set --local host_part (string replace -r ':.*$' '' -- "$arg")
-			# Remove user@ if present
-			builtin set --local host (string replace -r '^.*@' '' -- "$host_part")
-			if not contains "$host" $hosts
-				builtin set --append hosts "$host"
-			end
-		end
-	end
-
-	builtin printf '%s\n' $hosts
-end
-
-function __fssh_scp_status_splash --description 'SCP status splash'
-	builtin set --local timestamp "$(date +%Y-%m-%dT%H:%M:%S%z)"
-	builtin set --local hosts "$argv[1]"
-	builtin set --local log_file "$argv[2]"
-	# argv[3..] are the original scp args
-
-	builtin echo "#= ============================================================================="
-	builtin echo "#=  ___  ___ _ __    | Remote Host(s)      $hosts"
-	builtin echo "#= / __|/ __| '_ \\   | Timestamp           $timestamp"
-	builtin echo "#= \\__ \\ (__| |_) |  | Command \$argv       $argv[3..-1]"
-	builtin echo "#= |___/\\___|  __/   |"
-	builtin echo "#=          |_|      |"
-	builtin echo "#= $log_file"
-	builtin echo "#= -----------------------------------------------------------------------------"
-	builtin echo "#="
-
-	# Show SSH Config for each host
-	for host in (string split ' ' -- "$hosts")
-		if builtin test -n "$host"
-			builtin set --local config_details (__fssh_get_ssh_config_details "$host")
-			if builtin test -n "$config_details"
-				builtin echo "#= --- SSH Config ($host) ---"
-				for line in $config_details
-					builtin echo "#=   $line"
-				end
-			end
-
-			# Show Matched Agent Keys
-			builtin set --local matched_keys (__fssh_get_matched_agent_keys "$host")
-			if builtin test -n "$matched_keys"
-				builtin echo "#= --- Matched Agent Keys ($host) ---"
-				for key in $matched_keys
-					builtin echo "#=   $key"
-				end
-			end
-		end
-	end
-
-	builtin echo "#= ============================================================================="
-	builtin echo ""
-end
-
 function scp --description 'SCP with logging support'
 	__fterm_debug "=== SCP function called ==="
 	__fterm_debug "argv: $argv"
@@ -97,7 +10,7 @@ function scp --description 'SCP with logging support'
 	# Skip tmux check for dry-run options (they don't need logging)
 	if not __fssh_scp_is_dry_run $argv
 		# Ensure running inside tmux for logging
-		if not __fssh_ensure_tmux scp $argv
+		if not __fterm_ensure_tmux scp $argv
 			return $status
 		end
 	end
@@ -169,7 +82,7 @@ function scp --description 'SCP with logging support'
 
 	# Execute SCP
 	builtin set --local scp_cmd "$(__fssh_get_scp_cmd)"
-	builtin set --local config_args (__fssh_get_ssh_config_args)
+	builtin set --local config_args (__fterm_get_ssh_config_args)
 
 	# Set HOME for Windows OpenSSH to resolve Include paths correctly
 	builtin set --local original_home "$HOME"
