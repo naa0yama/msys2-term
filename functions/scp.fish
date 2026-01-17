@@ -48,11 +48,29 @@ function scp --description 'SCP with logging support'
 
 	# Extract remote hosts from arguments
 	builtin set --local remote_hosts (__fssh_scp_extract_hosts $argv)
-	builtin set --local hosts_str (string join ' ' -- $remote_hosts)
-	__fterm_debug "remote_hosts: $hosts_str"
+	__fterm_debug "remote_hosts: $remote_hosts"
+
+	# Build user@host format for each host (add user from config if not specified)
+	builtin set --local hosts_with_user
+	for host in $remote_hosts
+		if string match -q '*@*' -- "$host"
+			builtin set --append hosts_with_user "$host"
+		else
+			# Get user from ssh config
+			builtin set --local conn_info (string split \t -- (__fssh_ssh_get_connection_info "$host"))
+			builtin set --local ssh_user "$conn_info[1]"
+			if builtin test -n "$ssh_user"
+				builtin set --append hosts_with_user "$ssh_user@$host"
+			else
+				builtin set --append hosts_with_user "$host"
+			end
+		end
+	end
+	builtin set --local hosts_str (string join ' ' -- $hosts_with_user)
+	__fterm_debug "hosts_with_user: $hosts_str"
 
 	# Generate log file path (only for actual connections, not dry-run)
-	# Format: YYYYMMDDTHHMMSS_{session}-{window}{pane}_scp_{hosts}.log
+	# Format: YYYYMMDDTHHMMSS_{session}-{window}{pane}_scp_{user}@{hosts}.log
 	builtin set --local log_file ""
 	builtin set --local is_dry_run 0
 	if __fssh_scp_is_dry_run $argv
@@ -92,6 +110,11 @@ function scp --description 'SCP with logging support'
 
 	__fterm_debug "Executing: $scp_cmd $config_args $argv"
 
+	# Set tmux pane title before transfer
+	if type --query tmux; and builtin set --query TMUX
+		command tmux select-pane -T "scp:$hosts_str"
+	end
+
 	command "$scp_cmd" $config_args $argv
 	builtin set --local scp_status $status
 
@@ -118,6 +141,7 @@ function scp --description 'SCP with logging support'
 	# Stop logging and cleanup (only if not dry-run)
 	if test "$is_dry_run" -eq 0; and type --query tmux; and builtin set --query TMUX
 		command tmux select-pane -P 'default'
+		command tmux select-pane -T "fish"
 		__fterm_stop_logging "$log_file"
 	end
 

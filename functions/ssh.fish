@@ -60,7 +60,7 @@ function ssh --description 'SSH with logging support'
 	__fterm_debug "Connection info - user: $ssh_user, host: $ssh_host, port: $ssh_port"
 
 	# Generate log file path (only for actual connections, not dry-run)
-	# Format: YYYYMMDDTHHMMSS_{session}-{window}{pane}_{user}@{host}-{port}.log
+	# Format: YYYYMMDDTHHMMSS_{session}-{window}{pane}_ssh_{user}@{host}.log
 	builtin set --local log_file ""
 	builtin set --local is_dry_run 0
 	if __fssh_ssh_is_dry_run $argv
@@ -70,7 +70,12 @@ function ssh --description 'SSH with logging support'
 		builtin set --local date_path "$(date '+%Y/%m/%d')"
 		builtin set --local timestamp_file "$(date '+%Y%m%dT%H%M%S')"
 		builtin set --local pane_info "$(tmux display-message -p "#{session_name}-#{window_index}#{pane_index}")"
-		builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_$ssh_user@$ssh_host-$ssh_port.log"
+		# Use user@target_host if @ not already in target_host
+		if string match -q '*@*' -- "$target_host"
+			builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_ssh_$target_host.log"
+		else
+			builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_ssh_$ssh_user@$target_host.log"
+		end
 
 		__fterm_debug "log_file: $log_file"
 
@@ -98,6 +103,11 @@ function ssh --description 'SSH with logging support'
 
 	__fterm_debug "Executing: $ssh_cmd $config_args $argv"
 
+	# Set tmux pane title before connection
+	if type --query tmux; and builtin set --query TMUX
+		command tmux select-pane -T "ssh:$ssh_user@$target_host"
+	end
+
 	command "$ssh_cmd" $config_args $argv
 
 	# Restore original HOME
@@ -117,6 +127,7 @@ function ssh --description 'SSH with logging support'
 	# Stop logging and cleanup (only if not dry-run)
 	if test "$is_dry_run" -eq 0; and type --query tmux; and builtin set --query TMUX
 		command tmux select-pane -P 'default'
+		command tmux select-pane -T "fish"
 		__fterm_stop_logging "$log_file"
 	end
 

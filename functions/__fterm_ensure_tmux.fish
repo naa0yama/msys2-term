@@ -40,6 +40,9 @@ function __fterm_ensure_tmux --description 'Ensure running inside tmux session'
 		tmux new-session -s login-session \; send-keys "$full_cmd" Enter
 	end
 
+	# Reset terminal title after returning from tmux (detach)
+	printf '\033]0;%s\007' "fish"
+
 	# After returning from tmux, exit this function
 	# The actual command will be executed inside tmux
 	return 1

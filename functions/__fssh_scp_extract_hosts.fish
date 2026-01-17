@@ -13,10 +13,8 @@ function __fssh_scp_extract_hosts --description 'Extract remote hosts from SCP a
 
 		# Check if argument contains : (remote path indicator)
 		if string match -qr ':' -- "$arg"
-			# Extract host part (before :)
-			builtin set --local host_part (string replace -r ':.*$' '' -- "$arg")
-			# Remove user@ if present
-			builtin set --local host (string replace -r '^.*@' '' -- "$host_part")
+			# Extract host part (before :), keep user@ if present
+			builtin set --local host (string replace -r ':.*$' '' -- "$arg")
 			if not contains "$host" $hosts
 				builtin set --append hosts "$host"
 			end
