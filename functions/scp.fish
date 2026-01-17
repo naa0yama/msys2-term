@@ -112,6 +112,7 @@ function scp --description 'SCP with logging support'
 
 	# Set tmux pane title before transfer
 	if type --query tmux; and builtin set --query TMUX
+		command tmux set-window-option automatic-rename off
 		command tmux select-pane -T "scp:$hosts_str"
 	end
 
@@ -142,6 +143,7 @@ function scp --description 'SCP with logging support'
 	if test "$is_dry_run" -eq 0; and type --query tmux; and builtin set --query TMUX
 		command tmux select-pane -P 'default'
 		command tmux select-pane -T "fish"
+		command tmux set-window-option automatic-rename on
 		__fterm_stop_logging "$log_file"
 	end
 
