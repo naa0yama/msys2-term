@@ -177,12 +177,12 @@ function __fssh_get_matched_agent_keys --description 'Get agent keys matching Id
 		builtin set ssh_keygen_cmd "$__fssh_ssh_keygen_cmd"
 	end
 
-	builtin set --local agent_output ($ssh_add_cmd -l 2>/dev/null)
+	builtin set --local agent_output ("$ssh_add_cmd" -l 2>/dev/null)
 	if builtin test $status -eq 0; and builtin test -n "$agent_output"
 		for id_file in $identity_files
 			builtin set --local expanded_file (string replace "~" "$HOME" "$id_file")
 			if builtin test -f "$expanded_file"
-				builtin set --local id_fingerprint ($ssh_keygen_cmd -lf "$expanded_file" 2>/dev/null | awk '{print $2}')
+				builtin set --local id_fingerprint ("$ssh_keygen_cmd" -lf "$expanded_file" 2>/dev/null | awk '{print $2}')
 				if builtin test -n "$id_fingerprint"
 					for agent_key in $agent_output
 						if string match -q "*$id_fingerprint*" "$agent_key"
@@ -266,7 +266,7 @@ function ssh --description 'SSH with logging support'
 
 	# Check SSH agent connection
 	# timeout is required because gpg4win (gpg-agent) can freeze, which would freeze the terminal
-	if not timeout --foreground --kill-after=5 3 $ssh_add_cmd --list >/dev/null 2>&1
+	if not timeout --foreground --kill-after=5 3 "$ssh_add_cmd" --list >/dev/null 2>&1
 		set_color red
 		builtin echo "[ERROR] ssh-add connection failed."
 		set_color normal
