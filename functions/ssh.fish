@@ -248,6 +248,14 @@ function ssh --description 'SSH with logging support'
 	__fterm_debug "__fssh_ssh_config: $__fssh_ssh_config"
 	__fterm_debug "__fssh_ssh_add_cmd: $__fssh_ssh_add_cmd"
 
+	# Skip tmux check for dry-run options (they don't need logging)
+	if not __fssh_is_dry_run $argv
+		# Ensure running inside tmux for logging
+		if not __fssh_ensure_tmux ssh $argv
+			return $status
+		end
+	end
+
 	# Load SSH environment if exists
 	if builtin set --query SSH_ENV; and builtin test -f "$SSH_ENV"
 		set_color blue
