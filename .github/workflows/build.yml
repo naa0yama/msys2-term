@@ -51,6 +51,7 @@ jobs:
       fzf_version: ${{ steps.versions.outputs.fzf_version }}
       mintty_version: ${{ steps.versions.outputs.mintty_version }}
       rg_version: ${{ steps.versions.outputs.rg_version }}
+      tio_version: ${{ steps.versions.outputs.tio_version }}
       tmux_version: ${{ steps.versions.outputs.tmux_version }}
 
     steps:
@@ -74,13 +75,14 @@ jobs:
             mingw-w64-ucrt-x86_64-ripgrep
             mintty
             ncurses
+            tio
             tmux
 
       - name: Verify packages installed
         shell: msys2 {0}
         run: |
           echo "=== Installed packages ==="
-          pacman -Q tmux fish mingw-w64-ucrt-x86_64-ansifilter mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty
+          pacman -Q tmux fish mingw-w64-ucrt-x86_64-ansifilter mingw-w64-ucrt-x86_64-fzf mingw-w64-ucrt-x86_64-ripgrep mintty tio
 
           echo "=== Binary locations ==="
           which tmux fish
@@ -132,6 +134,7 @@ jobs:
           echo "fzf_version=$(pacman -Q mingw-w64-ucrt-x86_64-fzf | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "mintty_version=$(pacman -Q mintty | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "rg_version=$(pacman -Q mingw-w64-ucrt-x86_64-ripgrep | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "tio_version=$(pacman -Q tio | awk '{print $2}')" >> $GITHUB_OUTPUT
           echo "tmux_version=$(pacman -Q tmux | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Copy skeleton files
@@ -415,6 +418,7 @@ jobs:
             | ansifilter | ${{ needs.build.outputs.ansifilter_version }}    |
             | fzf        | ${{ needs.build.outputs.fzf_version }}           |
             | ripgrep    | ${{ needs.build.outputs.rg_version }}            |
+            | tio        | ${{ needs.build.outputs.tio_version }}           |
             | tmux       | ${{ needs.build.outputs.tmux_version }}          |
 
             ### Quick Start
@@ -460,6 +464,7 @@ jobs:
             | ansifilter | ${{ needs.build.outputs.ansifilter_version }} |
             | fzf        | ${{ needs.build.outputs.fzf_version }} |
             | ripgrep    | ${{ needs.build.outputs.rg_version }} |
+            | tio        | ${{ needs.build.outputs.tio_version }} |
             | tmux       | ${{ needs.build.outputs.tmux_version }} |
 
             Built with MSYS2 UCRT64 environment.`,
