@@ -93,17 +93,23 @@ if builtin set --query MSYSTEM
 		__fterm_debug_init "__fssh_ssh_keygen_cmd=$__fssh_ssh_keygen_cmd"
 		__fterm_debug_init "__fssh_ssh_config=$__fssh_ssh_config"
 
-		alias ssh-add "$__fssh_ssh_add_cmd"
-		alias ssh-keygen "$__fssh_ssh_keygen_cmd"
-		__fterm_debug_init "Aliases created: ssh-add, ssh-keygen (scp is defined in functions/scp.fish)"
+		function ssh-add --wraps="$__fssh_ssh_add_cmd" --description "alias ssh-add"
+			"$__fssh_ssh_add_cmd" $argv
+		end
+		function ssh-keygen --wraps="$__fssh_ssh_keygen_cmd" --description "alias ssh-keygen"
+			"$__fssh_ssh_keygen_cmd" $argv
+		end
+		__fterm_debug_init "Functions created: ssh-add, ssh-keygen (scp is defined in functions/scp.fish)"
 	else
 		__fterm_debug_init "Windows OpenSSH not found at $FTERM_SSH_WIN_DIR/ssh.exe"
 	end
 
 	# Git for Windows
 	if builtin test -x "$FTERM_SSH_WIN_GIT_DIR/git.exe"
-		alias git "$FTERM_SSH_WIN_GIT_DIR/git.exe"
-		__fterm_debug_init "Alias created: git -> $FTERM_SSH_WIN_GIT_DIR/git.exe"
+		function git --wraps="$FTERM_SSH_WIN_GIT_DIR/git.exe" --description "alias git"
+			"$FTERM_SSH_WIN_GIT_DIR/git.exe" $argv
+		end
+		__fterm_debug_init "Function created: git -> $FTERM_SSH_WIN_GIT_DIR/git.exe"
 	else
 		__fterm_debug_init "Git for Windows not found at $FTERM_SSH_WIN_GIT_DIR/git.exe"
 	end
