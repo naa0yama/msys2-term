@@ -7,6 +7,9 @@ function scp --description 'SCP with logging support'
 	__fterm_debug "__fssh_ssh_config: $__fssh_ssh_config"
 	__fterm_debug "__fssh_ssh_add_cmd: $__fssh_ssh_add_cmd"
 
+	# Record transfer start time (epoch seconds)
+	builtin set --local start_time (command date '+%s')
+
 	# Skip tmux check for dry-run options (they don't need logging)
 	if not __fssh_scp_is_dry_run $argv
 		# Ensure running inside tmux for logging
@@ -117,6 +120,11 @@ function scp --description 'SCP with logging support'
 		builtin set --export HOME "$original_home"
 	end
 
+	# Calculate transfer duration
+	builtin set --local end_time (command date '+%s')
+	builtin set --local duration (math $end_time - $start_time)
+	builtin set --local duration_str (__fterm_format_duration $duration)
+
 	# Output completion info
 	if builtin test $scp_status -eq 0
 		set_color green
@@ -128,6 +136,7 @@ function scp --description 'SCP with logging support'
 		builtin echo "#= >> Transfer Failed (exit: $scp_status) << ============================================="
 	end
 	builtin echo "#=    Timestamp     | $(command date +%Y-%m-%dT%H:%M:%S%z)"
+	builtin echo "#=    Duration      | $duration_str"
 	builtin echo "#=    Logfile       | $log_file"
 	builtin echo "#= ============================================================================="
 	set_color normal
