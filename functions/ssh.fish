@@ -24,16 +24,9 @@ function ssh --description 'SSH with logging support'
 		__fterm_debug "Loaded SSH_ENV: $SSH_ENV"
 	end
 
-	# Determine which ssh-add to use
-	builtin set --local ssh_add_cmd "ssh-add"
-	if builtin set --query __fssh_ssh_add_cmd
-		builtin set ssh_add_cmd "$__fssh_ssh_add_cmd"
-	end
-	__fterm_debug "ssh-add command: $ssh_add_cmd"
-
 	# Check SSH agent connection
-	# timeout is required because gpg4win (gpg-agent) can freeze, which would freeze the terminal
-	if not timeout --foreground --kill-after=5 3 "$ssh_add_cmd" -l >/dev/null 2>&1
+	# __fterm_run_ssh_cmd includes timeout (gpg-agent can freeze, which would freeze the terminal)
+	if not __fterm_run_ssh_cmd ssh-add -l >/dev/null
 		set_color red
 		builtin echo "[ERROR] ssh-add connection failed."
 		set_color normal
@@ -67,9 +60,9 @@ function ssh --description 'SSH with logging support'
 		builtin set is_dry_run 1
 		__fterm_debug "Dry-run mode detected, logging disabled"
 	else if type --query tmux; and builtin set --query TMUX
-		builtin set --local date_path "$(date '+%Y/%m/%d')"
-		builtin set --local timestamp_file "$(date '+%Y%m%dT%H%M%S')"
-		builtin set --local pane_info "$(tmux display-message -p "#{session_name}-#{window_index}#{pane_index}")"
+		builtin set --local date_path "$(command date '+%Y/%m/%d')"
+		builtin set --local timestamp_file "$(command date '+%Y%m%dT%H%M%S')"
+		builtin set --local pane_info "$(command tmux display-message -p "#{session_name}-#{window_index}#{pane_index}")"
 		# Use user@target_host if @ not already in target_host
 		if string match -q '*@*' -- "$target_host"
 			builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_ssh_$target_host.log"
@@ -98,7 +91,7 @@ function ssh --description 'SSH with logging support'
 	# Set HOME for Windows OpenSSH to resolve Include paths correctly
 	builtin set --local original_home "$HOME"
 	if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
-		builtin set --export HOME "$(cygpath -m "$USERPROFILE")"
+		builtin set --export HOME "$(command cygpath -m "$USERPROFILE")"
 	end
 
 	__fterm_debug "Executing: $ssh_cmd $config_args $argv"
@@ -120,7 +113,7 @@ function ssh --description 'SSH with logging support'
 	set_color blue
 	builtin echo ""
 	builtin echo "#= >> Disconnected << =========================================================="
-	builtin echo "#=    Timestamp     | $(date +%Y-%m-%dT%H:%M:%S%z)"
+	builtin echo "#=    Timestamp     | $(command date +%Y-%m-%dT%H:%M:%S%z)"
 	builtin echo "#=    Logfile       | $log_file"
 	builtin echo "#= ============================================================================="
 	set_color normal
