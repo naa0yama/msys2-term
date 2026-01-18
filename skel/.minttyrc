@@ -2,3 +2,7 @@ Columns=160
 Rows=40
 Font=Consolas
 FontHeight=11
+Language=ja
+AllowSetSelection=yes
+CtrlShiftShortcuts=yes
+ThemeFile=solarized-dark-higher-contrast

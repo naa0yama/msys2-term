@@ -1,0 +1,21 @@
+# Solarized Dark Higher Contrast
+# Ref: https://github.com/Gogh-Co/Gogh/blob/master/installs/solarized-dark-higher-contrast.sh
+ForegroundColour=156,194,195
+BackgroundColour=0,30,39
+CursorColour=156,194,195
+Black=0,40,49
+BoldBlack=0,100,136
+Red=209,28,36
+BoldRed=245,22,59
+Green=108,190,108
+BoldGreen=81,239,132
+Yellow=165,119,6
+BoldYellow=178,126,40
+Blue=33,118,199
+BoldBlue=23,142,200
+Magenta=198,28,111
+BoldMagenta=226,77,142
+Cyan=37,146,134
+BoldCyan=0,179,158
+White=234,227,203
+BoldWhite=252,244,220
