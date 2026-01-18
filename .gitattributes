@@ -1,0 +1,15 @@
+# Default behavior
+* text=auto
+
+# Shell scripts and config files must use LF
+*.sh text eol=lf
+*.fish text eol=lf
+.tmux.conf text eol=lf
+.minttyrc text eol=lf
+
+# Skel directory files
+skel/** text eol=lf
+
+# Keep batch files with CRLF for Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
