@@ -42,7 +42,7 @@ function _fssh_install --on-event fssh_install
 	__fssh_init_ssh_dirs
 
 	# Dependency check
-	builtin set --local deps ansifilter awk curl find fzf gzip rg ssh ssh-add tmux
+	builtin set --local deps ansifilter awk curl find fzf gzip rg ssh ssh-add tmux zcat
 	builtin set --local missing
 
 	for cmd in $deps

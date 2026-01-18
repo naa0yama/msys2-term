@@ -29,7 +29,7 @@ function fssh --description 'Select SSH host from config with fzf'
 	set --local __fssh_fzf_opts_was_unset 0
 	if not set --query FZF_DEFAULT_OPTS
 		set __fssh_fzf_opts_was_unset 1
-		set --export FZF_DEFAULT_OPTS '--exact --height 40% --reverse --border'
+		set --export FZF_DEFAULT_OPTS '--exact --height 90% --reverse --border'
 	end
 
 	if not builtin test -d "$FSSH_SSH_CONF_DIR"
