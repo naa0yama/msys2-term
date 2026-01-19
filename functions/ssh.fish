@@ -67,7 +67,7 @@ function ssh --description 'SSH with logging support'
 		builtin set --local timestamp_file "$(command date '+%Y%m%dT%H%M%S')"
 		builtin set --local pane_info "$(command tmux display-message -p "#{session_name}-#{window_index}#{pane_index}")"
 		# Use user@target_host if @ not already in target_host
-		if string match -q '*@*' -- "$target_host"
+		if string match --quiet '*@*' -- "$target_host"
 			builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_ssh_$target_host.log"
 		else
 			builtin set log_file "$FTERM_LOG_DIR_PREFIX$date_path/"$timestamp_file"_"$pane_info"_ssh_$ssh_user@$target_host.log"
@@ -100,9 +100,37 @@ function ssh --description 'SSH with logging support'
 	__fterm_debug "Executing: $ssh_cmd $config_args $argv"
 
 	# Set tmux pane title before connection
+	builtin set --local original_pane_title ""
 	if type --query tmux; and builtin set --query TMUX
+		# Debug: show all panes state before modification
+		__fterm_debug "tmux: === pane state before modification ==="
+		for pane_info in (command tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_title} #{pane_current_command}')
+			__fterm_debug "tmux: $pane_info"
+		end
+
+		# Save current pane title for restoration after disconnect
+		set original_pane_title "$(command tmux display-message -p '#{pane_title}')"
+		__fterm_debug "tmux: original_pane_title: $original_pane_title"
+
 		command tmux set-window-option automatic-rename off
-		command tmux select-pane -T "ssh:$ssh_user@$target_host"
+		__fterm_debug "tmux: set automatic-rename off"
+
+		command tmux set-window-option allow-rename off
+		__fterm_debug "tmux: set allow-rename off"
+
+		builtin set --local new_pane_title "ssh:$ssh_user@$target_host"
+		command tmux select-pane -T "$new_pane_title"
+		__fterm_debug "tmux: select-pane -T $new_pane_title"
+
+		# Set pane-specific user option for pane-border-format to display
+		command tmux set-option -p @fterm_ssh_host "$new_pane_title"
+		__fterm_debug "tmux: set-option -p @fterm_ssh_host $new_pane_title"
+
+		# Verify settings
+		builtin set --local current_pane_title "$(command tmux display-message -p '#{pane_title}')"
+		__fterm_debug "tmux: current_pane_title after set: $current_pane_title"
+		builtin set --local current_ssh_host "$(command tmux show-options -p -v @fterm_ssh_host)"
+		__fterm_debug "tmux: @fterm_ssh_host after set: $current_ssh_host"
 	end
 
 	command "$ssh_cmd" $config_args $argv
@@ -129,9 +157,34 @@ function ssh --description 'SSH with logging support'
 
 	# Stop logging and cleanup (only if not dry-run)
 	if test "$is_dry_run" -eq 0; and type --query tmux; and builtin set --query TMUX
+		# Debug: show all panes state after disconnect
+		__fterm_debug "tmux: === pane state after disconnect ==="
+		for pane_info in (command tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_title} #{pane_current_command}')
+			__fterm_debug "tmux: $pane_info"
+		end
+
 		command tmux select-pane -P 'default'
-		command tmux select-pane -T "fish"
+		__fterm_debug "tmux: select-pane -P default"
+
+		# Restore original pane title
+		if builtin test -n "$original_pane_title"
+			command tmux select-pane -T "$original_pane_title"
+			__fterm_debug "tmux: restored pane title to: $original_pane_title"
+		else
+			command tmux select-pane -T "fish"
+			__fterm_debug "tmux: restored pane title to: fish (default)"
+		end
+
+		# Unset pane-specific @fterm_ssh_host option
+		command tmux set-option -p -u @fterm_ssh_host
+		__fterm_debug "tmux: unset @fterm_ssh_host"
+
+		command tmux set-window-option allow-rename on
+		__fterm_debug "tmux: set allow-rename on"
+
 		command tmux set-window-option automatic-rename on
+		__fterm_debug "tmux: set automatic-rename on"
+
 		__fterm_stop_logging "$log_file"
 	end
 

@@ -18,13 +18,13 @@ end
 # MSYS2: use Windows userprofile, otherwise use $HOME
 if builtin set --query MSYSTEM; and builtin set --query USERPROFILE
 	builtin set --local win_home "$(cygpath -u "$USERPROFILE")"
-	builtin set --query FSSH_SSH_CONF_DIR;		or builtin set --global FSSH_SSH_CONF_DIR "$win_home/.ssh/conf.d/envs"
+	builtin set --query FSSH_SSH_CONF_DIR;		or builtin set --global FSSH_SSH_CONF_DIR "$win_home/.ssh"
 	builtin set --query FTERM_LOG_DIR_PREFIX;	or builtin set --global FTERM_LOG_DIR_PREFIX "$win_home/.dotfiles/logs/tmux/"
 	__fterm_debug_init "MSYS2 detected: MSYSTEM=$MSYSTEM"
 	__fterm_debug_init "USERPROFILE=$USERPROFILE"
 	__fterm_debug_init "win_home=$win_home"
 else
-	builtin set --query FSSH_SSH_CONF_DIR;		or builtin set --global FSSH_SSH_CONF_DIR "$HOME/.ssh/conf.d/envs"
+	builtin set --query FSSH_SSH_CONF_DIR;		or builtin set --global FSSH_SSH_CONF_DIR "$HOME/.ssh"
 	builtin set --query FTERM_LOG_DIR_PREFIX;	or builtin set --global FTERM_LOG_DIR_PREFIX "$HOME/.dotfiles/logs/tmux/"
 	__fterm_debug_init "Non-MSYS2 environment"
 end

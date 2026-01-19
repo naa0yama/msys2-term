@@ -49,7 +49,7 @@ function scp --description 'SCP with logging support'
 	# Build user@host format for each host (add user from config if not specified)
 	builtin set --local hosts_with_user
 	for host in $remote_hosts
-		if string match -q '*@*' -- "$host"
+		if string match --quiet '*@*' -- "$host"
 			builtin set --append hosts_with_user "$host"
 		else
 			# Get user from ssh config
@@ -107,9 +107,37 @@ function scp --description 'SCP with logging support'
 	__fterm_debug "Executing: $scp_cmd $config_args $argv"
 
 	# Set tmux pane title before transfer
+	builtin set --local original_pane_title ""
 	if type --query tmux; and builtin set --query TMUX
+		# Debug: show all panes state before modification
+		__fterm_debug "tmux: === pane state before modification ==="
+		for pane_info in (command tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_title} #{pane_current_command}')
+			__fterm_debug "tmux: $pane_info"
+		end
+
+		# Save current pane title for restoration after transfer
+		set original_pane_title "$(command tmux display-message -p '#{pane_title}')"
+		__fterm_debug "tmux: original_pane_title: $original_pane_title"
+
 		command tmux set-window-option automatic-rename off
-		command tmux select-pane -T "scp:$hosts_str"
+		__fterm_debug "tmux: set automatic-rename off"
+
+		command tmux set-window-option allow-rename off
+		__fterm_debug "tmux: set allow-rename off"
+
+		builtin set --local new_pane_title "scp:$hosts_str"
+		command tmux select-pane -T "$new_pane_title"
+		__fterm_debug "tmux: select-pane -T $new_pane_title"
+
+		# Set pane-specific user option for pane-border-format to display
+		command tmux set-option -p @fterm_ssh_host "$new_pane_title"
+		__fterm_debug "tmux: set-option -p @fterm_ssh_host $new_pane_title"
+
+		# Verify settings
+		builtin set --local current_pane_title "$(command tmux display-message -p '#{pane_title}')"
+		__fterm_debug "tmux: current_pane_title after set: $current_pane_title"
+		builtin set --local current_ssh_host "$(command tmux show-options -p -v @fterm_ssh_host)"
+		__fterm_debug "tmux: @fterm_ssh_host after set: $current_ssh_host"
 	end
 
 	command "$scp_cmd" $config_args $argv
@@ -143,9 +171,34 @@ function scp --description 'SCP with logging support'
 
 	# Stop logging and cleanup (only if not dry-run)
 	if test "$is_dry_run" -eq 0; and type --query tmux; and builtin set --query TMUX
+		# Debug: show all panes state after transfer
+		__fterm_debug "tmux: === pane state after transfer ==="
+		for pane_info in (command tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_title} #{pane_current_command}')
+			__fterm_debug "tmux: $pane_info"
+		end
+
 		command tmux select-pane -P 'default'
-		command tmux select-pane -T "fish"
+		__fterm_debug "tmux: select-pane -P default"
+
+		# Restore original pane title
+		if builtin test -n "$original_pane_title"
+			command tmux select-pane -T "$original_pane_title"
+			__fterm_debug "tmux: restored pane title to: $original_pane_title"
+		else
+			command tmux select-pane -T "fish"
+			__fterm_debug "tmux: restored pane title to: fish (default)"
+		end
+
+		# Unset pane-specific @fterm_ssh_host option
+		command tmux set-option -p -u @fterm_ssh_host
+		__fterm_debug "tmux: unset @fterm_ssh_host"
+
+		command tmux set-window-option allow-rename on
+		__fterm_debug "tmux: set allow-rename on"
+
 		command tmux set-window-option automatic-rename on
+		__fterm_debug "tmux: set automatic-rename on"
+
 		__fterm_stop_logging "$log_file"
 	end
 
