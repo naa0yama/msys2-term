@@ -1,16 +1,25 @@
-# Fuzzy Term
+# Fuzzy Term (fterm)
 
-![](docs/img/191026.png)
+![](docs/img/141342.gif)
 
 * fssh(Fuzzy SSH)
   * fzf を利用した SSH 先の選択、 MSYS2 でも Win32-OpenSSH を利用した快適な接続
   * Tmux を利用した SSH セッションごとに自動ロギング
+  * セッション終了後に自動 gz 圧縮
+
 * [工事中] fcon(Fuzzy Console)
   * [tio](https://github.com/tio/tio) を利用した Serial Console 接続の簡略化
   * fzf を利用して Console デバイスの選択
   * Tmux を利用した Console セッションごとに自動ロギング
+  * セッション終了後に自動 gz 圧縮
+
 * flog(Fuzzy log)
   * fterm 類で作成されたログのファイル名単位検索, 全文検索
+
+> [!Important]
+> ssh_config の Match 式には未対応
+> fterm の仕様として事前定義済みであり `Host <hoge>` の ssh コマンドが認識できる接続先であることが前提になっている。そのため Match で動的設定される場合 Logging のファイル名を正しく設定出来ないので未対応かつ対応予定は無い。
+> `ssh user@<host or IP>` の場合は ssh が認識できるため問題なく Logging される
 
 ## これは何?
 
