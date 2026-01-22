@@ -27,6 +27,17 @@ function ssh --description 'SSH with logging support'
 		__fterm_debug "Loaded SSH_ENV: $SSH_ENV"
 	end
 
+	# Update SSH_AUTH_SOCK from tmux global environment
+	# When attaching to tmux, global environment is updated but pane environment is not.
+	# This ensures we use the latest SSH_AUTH_SOCK from agent forwarding.
+	if builtin type --query tmux; and builtin set --query TMUX
+		builtin set --local tmux_sock (command tmux show-environment SSH_AUTH_SOCK 2>/dev/null | builtin string replace 'SSH_AUTH_SOCK=' '')
+		if builtin test -n "$tmux_sock"; and builtin test -S "$tmux_sock"
+			builtin set --export SSH_AUTH_SOCK "$tmux_sock"
+			__fterm_debug "Updated SSH_AUTH_SOCK from tmux global: $tmux_sock"
+		end
+	end
+
 	# Check SSH agent connection
 	# __fterm_run_ssh_cmd includes timeout (gpg-agent can freeze, which would freeze the terminal)
 	if not __fterm_run_ssh_cmd ssh-add -l >/dev/null
@@ -45,6 +56,20 @@ function ssh --description 'SSH with logging support'
 	# Get target host (last argument)
 	builtin set --local target_host "$argv[-1]"
 	__fterm_debug "target_host: $target_host"
+
+	# Run config check before connection (skip for dry-run)
+	if not __fssh_ssh_is_dry_run $argv
+		set_color blue
+		builtin echo "[INFO ] Running SSH config validation..."
+		set_color normal
+
+		if not __fssh_config_check "$target_host"
+			set_color red
+			builtin echo "[ERROR] Config validation failed. Connection aborted."
+			set_color normal
+			return 1
+		end
+	end
 
 	# Get connection info: user, host, port
 	builtin set --local conn_info (string split \t -- (__fssh_ssh_get_connection_info "$target_host"))
@@ -112,6 +137,18 @@ function ssh --description 'SSH with logging support'
 		set original_pane_title "$(command tmux display-message -p '#{pane_title}')"
 		__fterm_debug "tmux: original_pane_title: $original_pane_title"
 
+		# Get current SSH connection count for this window (default 0)
+		builtin set --local current_count "$(command tmux show-window-options -v @fterm_ssh_count 2>/dev/null)"
+		if builtin test -z "$current_count"
+			builtin set current_count 0
+		end
+
+		# Increment count
+		builtin set --local new_count (math $current_count + 1)
+		command tmux set-window-option @fterm_ssh_count "$new_count"
+		__fterm_debug "tmux: @fterm_ssh_count incremented to $new_count"
+
+		# Set rename options off (safe to call multiple times)
 		command tmux set-window-option automatic-rename off
 		__fterm_debug "tmux: set automatic-rename off"
 
@@ -179,11 +216,30 @@ function ssh --description 'SSH with logging support'
 		command tmux set-option -p -u @fterm_ssh_host
 		__fterm_debug "tmux: unset @fterm_ssh_host"
 
-		command tmux set-window-option allow-rename on
-		__fterm_debug "tmux: set allow-rename on"
+		# Decrement SSH connection count for this window
+		builtin set --local current_count "$(command tmux show-window-options -v @fterm_ssh_count 2>/dev/null)"
+		if builtin test -z "$current_count"; or builtin test "$current_count" -le 0
+			builtin set current_count 1
+		end
 
-		command tmux set-window-option automatic-rename on
-		__fterm_debug "tmux: set automatic-rename on"
+		builtin set --local new_count (math $current_count - 1)
+		command tmux set-window-option @fterm_ssh_count "$new_count"
+		__fterm_debug "tmux: @fterm_ssh_count decremented to $new_count"
+
+		# Only restore rename options when all SSH connections in this window are closed
+		if builtin test "$new_count" -eq 0
+			command tmux set-window-option allow-rename on
+			__fterm_debug "tmux: set allow-rename on (all SSH connections closed)"
+
+			command tmux set-window-option automatic-rename on
+			__fterm_debug "tmux: set automatic-rename on (all SSH connections closed)"
+
+			# Unset the count option
+			command tmux set-window-option -u @fterm_ssh_count
+			__fterm_debug "tmux: unset @fterm_ssh_count"
+		else
+			__fterm_debug "tmux: keeping allow-rename off ($new_count SSH connections remaining)"
+		end
 
 		__fterm_stop_logging "$log_file"
 	end

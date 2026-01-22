@@ -16,6 +16,10 @@
 * flog(Fuzzy log)
   * fterm 類で作成されたログのファイル名単位検索, 全文検索
 
+* fgen(Fuzzy configuration generater)
+  * .ssh/config template から生成
+
+
 > [!Important]
 > ssh_config の Match 式には未対応
 > fterm の仕様として事前定義済みであり `Host <hoge>` の ssh コマンドが認識できる接続先であることが前提になっている。そのため Match で動的設定される場合 Logging のファイル名を正しく設定出来ないので未対応かつ対応予定は無い。

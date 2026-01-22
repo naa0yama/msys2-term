@@ -27,6 +27,17 @@ function scp --description 'SCP with logging support'
 		__fterm_debug "Loaded SSH_ENV: $SSH_ENV"
 	end
 
+	# Update SSH_AUTH_SOCK from tmux global environment
+	# When attaching to tmux, global environment is updated but pane environment is not.
+	# This ensures we use the latest SSH_AUTH_SOCK from agent forwarding.
+	if builtin type --query tmux; and builtin set --query TMUX
+		builtin set --local tmux_sock (command tmux show-environment SSH_AUTH_SOCK 2>/dev/null | builtin string replace 'SSH_AUTH_SOCK=' '')
+		if builtin test -n "$tmux_sock"; and builtin test -S "$tmux_sock"
+			builtin set --export SSH_AUTH_SOCK "$tmux_sock"
+			__fterm_debug "Updated SSH_AUTH_SOCK from tmux global: $tmux_sock"
+		end
+	end
+
 	# Check SSH agent connection
 	# __fterm_run_ssh_cmd includes timeout (gpg-agent can freeze, which would freeze the terminal)
 	if not __fterm_run_ssh_cmd ssh-add -l >/dev/null
@@ -45,6 +56,29 @@ function scp --description 'SCP with logging support'
 	# Extract remote hosts from arguments
 	builtin set --local remote_hosts (__fssh_scp_extract_hosts $argv)
 	__fterm_debug "remote_hosts: $remote_hosts"
+
+	# Run config check for each remote host (skip for dry-run)
+	if not __fssh_scp_is_dry_run $argv
+		set_color blue
+		builtin echo "[INFO ] Running SSH config validation..."
+		set_color normal
+
+		for remote_host in $remote_hosts
+			# Extract host part (remove user@ prefix if present)
+			builtin set --local check_host "$remote_host"
+			if builtin string match --quiet '*@*' -- "$remote_host"
+				builtin set check_host (builtin string replace --regex '^[^@]+@' '' "$remote_host")
+			end
+
+			if not __fssh_config_check "$check_host"
+				set_color red
+				builtin echo "[ERROR] Config validation failed for host: $check_host"
+				builtin echo "[ERROR] Transfer aborted."
+				set_color normal
+				return 1
+			end
+		end
+	end
 
 	# Build user@host format for each host (add user from config if not specified)
 	builtin set --local hosts_with_user
